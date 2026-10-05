@@ -1,0 +1,6 @@
+{
+  "name": "office-view",
+  "version": "0.1.0",
+  "description": "セッション間の指示を、ドット絵のキャラが階段を降りて伝えに行くオフィス図で見せる",
+  "types": "./types/index.d.ts"
+}
