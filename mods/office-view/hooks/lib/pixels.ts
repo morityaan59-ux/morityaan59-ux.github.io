@@ -44,60 +44,6 @@ export function sprite(
   }
 }
 
-export type SvgText = {
-  x: number
-  y: number
-  text: string
-  size: number
-  color: string
-  anchor?: 'start' | 'middle' | 'end'
-  bold?: boolean
-}
-
-function esc(s: string): string {
-  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
-}
-
-function rgb(c: number): string {
-  return '#' + (c & 0xffffff).toString(16).padStart(6, '0')
-}
-
-/**
- * フレームを SVG 文字列にする。色ごとに 1 本の path にまとめ、
- * 横に続く同色ピクセルは 1 つの矩形にするので、文字数上限（131072）に収まる。
- */
-export function toSvg(f: Frame, opts: { width: number; background: string; texts: readonly SvgText[] }): string {
-  const paths = new Map<number, string[]>()
-  for (let y = 0; y < f.h; y++) {
-    let x = 0
-    while (x < f.w) {
-      const c = f.px[y * f.w + x] ?? CLEAR
-      let run = 1
-      while (x + run < f.w && f.px[y * f.w + x + run] === c) run++
-      if (c !== CLEAR) {
-        const list = paths.get(c) ?? []
-        list.push(`M${x} ${y}h${run}v1h-${run}z`)
-        paths.set(c, list)
-      }
-      x += run
-    }
-  }
-  const height = Math.round((opts.width * f.h) / f.w)
-  const parts = [
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${f.w} ${f.h}" width="${opts.width}" height="${height}" shape-rendering="crispEdges">`,
-    `<rect width="${f.w}" height="${f.h}" fill="${esc(opts.background)}"/>`,
-  ]
-  for (const [c, list] of paths) parts.push(`<path fill="${rgb(c)}" d="${list.join('')}"/>`)
-  for (const t of opts.texts) {
-    parts.push(
-      `<text x="${t.x}" y="${t.y}" font-size="${t.size}" fill="${esc(t.color)}" text-anchor="${t.anchor ?? 'start'}"` +
-        ` font-family="'Hiragino Sans','Yu Gothic','Noto Sans JP',sans-serif"${t.bold === true ? ' font-weight="bold"' : ''}>${esc(t.text)}</text>`,
-    )
-  }
-  parts.push('</svg>')
-  return parts.join('')
-}
-
 const B64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
 
 export function base64(bytes: Uint8Array): string {

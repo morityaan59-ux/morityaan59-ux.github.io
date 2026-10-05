@@ -32,7 +32,14 @@ export function parseLayout(value: unknown): OfficeLayout | null {
     if (typeof f !== 'object' || f === null) return []
     const ff = f as Record<string, unknown>
     if (typeof ff.name !== 'string' || !Array.isArray(ff.desks)) return []
-    return [{ name: ff.name, desks: ff.desks.filter((d): d is string => typeof d === 'string') }]
+    return [
+      {
+        name: ff.name,
+        desks: ff.desks.filter((d): d is string => typeof d === 'string'),
+        ...(typeof ff.subtitle === 'string' ? { subtitle: ff.subtitle } : {}),
+        ...(typeof ff.role === 'string' ? { role: ff.role } : {}),
+      },
+    ]
   })
   if (floors.length === 0) return null
   return { floors, colors: stringMap(v.colors), labels: stringMap(v.labels) }
@@ -80,19 +87,15 @@ export function findDesk(layout: OfficeLayout, address: string): DeskRef | null 
 }
 
 /**
- * 図に出す短い名前。labels にあればそれ。同じ階に同じキャラが何席もあるときは案件名を
- * 5 文字まで、それ以外はキャラ名。
+ * 名札。labels にあればそれ、「キャラ/案件」なら「案件のキャラ」、それ以外は席名そのもの。
+ * 例: "モモ/ヤフーフリマ" → "ヤフーフリマのモモ"
  */
-export function labelOf(layout: OfficeLayout, desk: string): string {
+export function tagOf(layout: OfficeLayout, desk: string): string {
   const key = deskKey(desk)
   const set = layout.labels[key] ?? layout.labels[desk]
   if (set !== undefined) return set
-  const name = charName(key)
   const slash = key.indexOf('/')
-  const floor = layout.floors.find(f => f.desks.includes(key))
-  const same = floor?.desks.filter(d => charName(d) === name).length ?? 0
-  if (slash > 0 && same > 1) return Array.from(key.slice(slash + 1)).slice(0, 5).join('')
-  return name
+  return slash > 0 ? `${key.slice(slash + 1)}の${key.slice(0, slash)}` : key
 }
 
 /** 説明行とログに出す名前。「キャラ/案件」の形ならそのまま、それ以外は labels の呼び名。 */

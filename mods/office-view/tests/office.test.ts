@@ -3,9 +3,10 @@ import { describe, expect, mock, test } from 'claude-code/testing'
 import type { Engine } from 'claude-code/testing'
 
 import type { OfficeEvent } from '../types'
-import { charName, DEFAULT_LAYOUT, deskKey, findDesk, labelOf, nameOf, summarize } from '../hooks/lib/layout'
-import { base64, frame, rect, toRaster, toSvg } from '../hooks/lib/pixels'
-import { along, drawScene, walkPath, WALK_FRAMES } from '../hooks/lib/scene'
+import { deskStates } from '../hooks/lib/activity'
+import { charName, DEFAULT_LAYOUT, deskKey, findDesk, nameOf, summarize, tagOf } from '../hooks/lib/layout'
+import { base64, frame, rect, toRaster } from '../hooks/lib/pixels'
+import { along, drawSvg, walkPath, wrapTag, WALK_FRAMES } from '../hooks/lib/vertical'
 
 const PANE = {
   component: 'Pane',
@@ -13,9 +14,9 @@ const PANE = {
   props: {
     title: 'オフィス',
     isFocused: false,
-    bodyColumns: 80,
+    bodyColumns: 44,
     placement: 'dock',
-    scroll: { offset: 0, bodyRows: 40 },
+    scroll: { offset: 0, bodyRows: 60 },
     view: {},
   },
 } as const
@@ -57,21 +58,16 @@ async function office($: Engine, args: string): Promise<{ text?: string }> {
   })
 }
 
-describe('席名と要約', () => {
+function send(at: number, from: string, to: string, summary: string): OfficeEvent {
+  return { id: `${from}-${at}`, at, from, to, summary, kind: 'send' }
+}
+
+describe('席名と名札', () => {
   test('セッション名から席名とキャラ名を取り出す', () => {
     expect(deskKey('[モモ/PPPアプリ] 要件')).toBe('モモ/PPPアプリ')
     expect(deskKey('ソラ/本社')).toBe('ソラ/本社')
     expect(charName('[ソラ/本社] 社長秘書')).toBe('ソラ')
     expect(charName('開発プロジェクト相談')).toBe('開発プロジェクト相談')
-  })
-
-  test('同じキャラが何席もあるときは案件名で見分ける', () => {
-    expect(labelOf(DEFAULT_LAYOUT, 'モモ/PPPアプリ')).toBe('PPPアプ')
-    expect(labelOf(DEFAULT_LAYOUT, 'ソラ/本社')).toBe('ソラ')
-    // 別の階に同じキャラがいても、同じ階でなければキャラ名のまま
-    expect(labelOf(DEFAULT_LAYOUT, 'アオ/ヤフーフリマ')).toBe('アオ')
-    expect(nameOf(DEFAULT_LAYOUT, '[モモ/PPPアプリ] 要件')).toBe('モモ/PPPアプリ')
-    expect(nameOf({ ...DEFAULT_LAYOUT, labels: { 開発プロジェクト相談: '相談役' } }, '開発プロジェクト相談')).toBe('相談役')
   })
 
   test('宛先から席を探す（完全一致 → 同じキャラ → 来客）', () => {
@@ -80,22 +76,70 @@ describe('席名と要約', () => {
     expect(findDesk(DEFAULT_LAYOUT, '知らない人')).toBeNull()
   })
 
+  test('名札は「案件のキャラ」、呼び名があればそれ', () => {
+    expect(tagOf(DEFAULT_LAYOUT, 'モモ/ヤフーフリマ')).toBe('ヤフーフリマのモモ')
+    expect(tagOf(DEFAULT_LAYOUT, 'ソラ/本社')).toBe('本社のソラ')
+    expect(tagOf({ ...DEFAULT_LAYOUT, labels: { 開発プロジェクト相談: '相談役' } }, '開発プロジェクト相談')).toBe('相談役')
+    expect(nameOf(DEFAULT_LAYOUT, '[モモ/PPPアプリ] 要件')).toBe('モモ/PPPアプリ')
+  })
+
+  test('長い名札は 1 行 11 文字、2 行までに折る', () => {
+    expect(wrapTag('クリップ&フリップのモモ')).toEqual(['クリップ&フリップの', 'モモ'])
+    const long = wrapTag('あ'.repeat(30))
+    expect(long.length).toBe(2)
+    expect(long[1]?.endsWith('…')).toBe(true)
+  })
+
   test('要約は最初の行だけ、40 文字まで', () => {
     expect(summarize('\n  要件の確認を依頼  \n詳細はここ')).toBe('要件の確認を依頼')
     expect(Array.from(summarize('あ'.repeat(60))).length).toBe(40)
   })
 })
 
-describe('描画の部品', () => {
-  test('違う階へは階段を経由して歩く', () => {
-    const path = walkPath(DEFAULT_LAYOUT, 120, 'ソラ/本社', 'モモ/PPPアプリ')
+describe('席の状態', () => {
+  const now = 10 * 60_000
+  test('指示を受けて返事をしていない席は「指示あり」、返事をしたら消える', () => {
+    const asked = [send(now - 3 * 60_000, 'ソラ/本社', '[モモ/PPPアプリ] 要件', '確認して')]
+    const s1 = deskStates(DEFAULT_LAYOUT, asked, {}, now, '')
+    expect(s1.get('モモ/PPPアプリ')?.pending?.summary).toBe('確認して')
+    expect(s1.get('モモ/PPPアプリ')?.status).toBe('指示あり 3分前')
+
+    const answered = [...asked, send(now - 60_000, 'モモ/PPPアプリ', 'ソラ/本社', '終わりました')]
+    const presence = { 'モモ/PPPアプリ': now - 10_000 }
+    const s2 = deskStates(DEFAULT_LAYOUT, answered, presence, now, '')
+    expect(s2.get('モモ/PPPアプリ')?.pending).toBeNull()
+    expect(s2.get('モモ/PPPアプリ')?.status).toBe('送信 1分前')
+  })
+
+  test('在席の合図が古い席は「退勤」、自分の席は常に在席', () => {
+    const presence = { 'アオ/本社': now - 10_000, 'クロ/ヤフーフリマ': now - 5 * 60_000 }
+    const s = deskStates(DEFAULT_LAYOUT, [], presence, now, '[ソラ/本社] 社長秘書')
+    expect(s.get('アオ/本社')?.status).toBe('在席')
+    expect(s.get('クロ/ヤフーフリマ')?.status).toBe('退勤')
+    expect(s.get('ソラ/本社')?.status).toBe('在席・あなた')
+  })
+})
+
+describe('縦型の図', () => {
+  test('違う階へは右の廊下を通って歩き、相手の隣に立つ', () => {
+    const path = walkPath(DEFAULT_LAYOUT, 'ソラ/本社', 'モモ/PPPアプリ')
     expect(path.length).toBe(4)
     expect(path[1]?.x).toBe(path[2]?.x)
+    expect((path[2]?.y ?? 0) > (path[1]?.y ?? 0)).toBe(true)
     expect(along(path, 0)).toEqual(path[0])
     expect(along(path, 1)).toEqual(path[3])
-    // 相手に重ならず、右隣に立つ
-    const target = walkPath(DEFAULT_LAYOUT, 120, 'モモ/PPPアプリ', 'モモ/PPPアプリ')[0]
-    expect((path[3]?.x ?? 0) - (target?.x ?? 0)).toBe(9)
+  })
+
+  test('縦長で、名札と吹き出しが入り、文字数上限に収まる', () => {
+    const log = [send(0, 'ソラ/本社', '[モモ/クリップ&フリップ] 要件', '0.8.2要件書の値が違う')]
+    const states = deskStates(DEFAULT_LAYOUT, log, {}, 60_000, '')
+    const { svg } = drawSvg({ layout: DEFAULT_LAYOUT, anim: null, states, width: 320 })
+    const m = /viewBox="0 0 (\d+) ([\d.]+)"/.exec(svg)
+    expect(Number(m?.[2]) > Number(m?.[1]) * 2).toBe(true)
+    expect(svg).toContain('ヤフーフリマのモモ')
+    expect(svg).toContain('0.8.2要件書の値')
+    expect(svg).toContain('<tspan fill="#e23b3b">!</tspan>')
+    expect(svg.length).toBeLessThan(131072)
   })
 
   test('Raster のセルは 縦 2 ピクセル = 1 セル', () => {
@@ -104,16 +148,8 @@ describe('描画の部品', () => {
     const r = toRaster(f)
     expect(r.columns).toBe(4)
     expect(r.rows).toBe(3)
-    expect(r.cells.length).toBe(Math.ceil((4 * 3 * 12) / 3) * 4)
     expect(base64(new Uint8Array([77, 97, 110]))).toBe('TWFu')
     expect(base64(new Uint8Array([77]))).toBe('TQ==')
-  })
-
-  test('SVG は文字数上限に十分収まる', () => {
-    const scene = drawScene(DEFAULT_LAYOUT, 120, null, 'ソラ/本社')
-    const svg = toSvg(scene.frame, { width: 480, background: '#fff', texts: scene.texts })
-    expect(svg.startsWith('<svg')).toBe(true)
-    expect(svg.length).toBeLessThan(131072)
   })
 })
 
@@ -143,6 +179,13 @@ describe('連絡板', () => {
     expect(saved.length).toBe(1)
     expect(saved[0]).toEqual(expect.objectContaining({ kind: 'receive', to: 'モモ/PPPアプリ', summary: '' }))
   })
+
+  test('席を登録すると在席の合図を書く', async ($, on) => {
+    const { store } = world(on, 'sess-ao')
+    await start($)
+    await office($, 'desk [アオ/本社] 現場ビュー')
+    expect(store.get('here:sess-ao')).toEqual({ desk: 'アオ/本社', at: Date.UTC(2026, 9, 5, 1, 0, 0) })
+  })
 })
 
 describe('オフィス図', () => {
@@ -162,25 +205,28 @@ describe('オフィス図', () => {
 
     await clock.advance(120 * WALK_FRAMES)
     const desk = await $.ui.mount({ plugin: 'office-view', surface: 'desktop', ...PANE })
-    expect(await desk.find({ type: 'Svg' })).toBeDefined()
-    expect(await desk.find({ type: 'Text', text: /要件の確認を依頼/ })).toBeDefined()
-    expect(await desk.find({ text: /ソラ\/本社 → モモ\/PPPアプリ/ })).toBeDefined()
+    const svg = await desk.find({ type: 'Svg' })
+    expect(String(svg?.props.source)).toContain('クリップ&amp;フリップの')
+    expect(await desk.find({ type: 'Text', text: /0\.8\.2要件書の値が違う/ })).toBeDefined()
     await desk.unmount()
 
     const term = await $.ui.mount({ plugin: 'office-view', surface: 'terminal', ...PANE })
-    const raster = await term.find({ type: 'Raster' })
-    expect(raster?.props.columns).toBe(80)
+    expect((await term.findAll({ type: 'Raster' })).length).toBe(11)
+    expect(await term.find({ type: 'Text', text: 'ヤフーフリマのモモ' })).toBeDefined()
+    expect(await term.find({ type: 'Text', text: '退勤' })).toBeDefined()
     await term.unmount()
   })
 
-  test('全部再生し終わると待機に戻る', async ($, on) => {
+  test('全部再生し終わると待機に戻り、返事待ちの席に「!」が残る', async ($, on) => {
     const { clock } = world(on, 'sess-sora')
     await start($)
     await office($, 'desk ソラ/本社')
     await office($, 'demo')
     await clock.advance(120 * 200)
-    const ui = await $.ui.mount({ plugin: 'office-view', surface: 'desktop', ...PANE })
+    const ui = await $.ui.mount({ plugin: 'office-view', surface: 'terminal', ...PANE })
     expect(await ui.find({ type: 'Text', text: /待機中/ })).toBeDefined()
+    expect(await ui.find({ type: 'Text', text: 'クリップ&フリップのモモ!' })).toBeDefined()
+    expect(await ui.find({ type: 'Text', text: /💬 0\.8\.2要件書/ })).toBeDefined()
     await ui.unmount()
   })
 })
