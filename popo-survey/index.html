@@ -203,7 +203,7 @@
 
   <div class="finish" id="finish">
     <h2>回答を提出する</h2>
-    <p class="desc" style="margin:0">「回答をまとめる」を押すと、全回答が1つのテキストになります。コピーしてポポにLINE等で送るか、ファイルを保存して送ってください。</p>
+    <p class="desc" style="margin:0">「回答をまとめる」を押すと、全回答が1つのテキストになります。「コピー」を押してポポとのLINEに貼り付け、送信してください。長い場合は自動で数回に分かれます。</p>
     <div class="actions">
       <button class="btn primary" id="btnExport">回答をまとめる</button>
       <button class="btn" id="btnJson">バックアップ保存（JSON）</button>
@@ -220,7 +220,7 @@
   <div class="dh"><b>回答まとめ</b><button class="btn small" id="dlgClose">閉じる</button></div>
   <pre id="dlgText"></pre>
   <div class="df">
-    <button class="btn primary" id="dlgCopy">テキストをコピー</button>
+    <div id="copyBox" style="display:flex;flex-wrap:wrap;gap:8px;width:100%"></div>
     <button class="btn" id="dlgDl">テキストファイルを保存</button>
   </div>
 </dialog>
@@ -846,13 +846,23 @@
   }
 
   var dlg = document.getElementById("dlg");
-  document.getElementById("btnExport").addEventListener("click", function () {
-    document.getElementById("dlgText").textContent = buildText();
-    if (dlg.showModal) dlg.showModal(); else dlg.setAttribute("open", "");
-  });
-  document.getElementById("dlgClose").addEventListener("click", function () { dlg.close ? dlg.close() : dlg.removeAttribute("open"); });
-  document.getElementById("dlgCopy").addEventListener("click", function () {
-    var text = buildText();
+  // LINEの1メッセージ上限に収まるよう、質問の区切りで分割する
+  var CHUNK = 4000;
+  function splitText(text) {
+    if (text.length <= CHUNK) return [text];
+    var blocks = text.split(/\n(?=\n[■▼])/);
+    var parts = [], cur = "";
+    blocks.forEach(function (b) {
+      if (cur && (cur + "\n" + b).length > CHUNK) { parts.push(cur); cur = b.replace(/^\n/, ""); }
+      else cur = cur ? cur + "\n" + b : b;
+    });
+    if (cur) parts.push(cur);
+    var name = (get("q0", "name") || "").trim();
+    return parts.map(function (t, i) {
+      return "【" + (i + 1) + "/" + parts.length + "】" + (i && name ? name + "（続き）" : "") + "\n" + t;
+    });
+  }
+  function copyText(text) {
     function fallback() {
       var ta = h("textarea"); ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
       document.body.appendChild(ta); ta.select();
@@ -862,7 +872,26 @@
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(text).then(function () { toast("コピーしました"); }, fallback);
     } else fallback();
+  }
+  var copyBox = document.getElementById("copyBox");
+  document.getElementById("btnExport").addEventListener("click", function () {
+    var text = buildText();
+    var parts = splitText(text);
+    document.getElementById("dlgText").textContent = text;
+    copyBox.innerHTML = "";
+    if (parts.length > 1) {
+      copyBox.appendChild(h("p", { class: "note", style: "margin:0 0 6px;width:100%",
+        text: "回答が長いため" + parts.length + "回に分けて送ってください。順番にコピー → LINEに貼り付け → 送信 を繰り返します。" }));
+    }
+    parts.forEach(function (t, i) {
+      var b = h("button", { type: "button", class: "btn primary",
+        text: parts.length > 1 ? "コピー " + (i + 1) + "/" + parts.length : "テキストをコピー" });
+      b.addEventListener("click", function () { copyText(t); b.textContent = (parts.length > 1 ? (i + 1) + "/" + parts.length + " " : "") + "コピー済み ✓"; });
+      copyBox.appendChild(b);
+    });
+    if (dlg.showModal) dlg.showModal(); else dlg.setAttribute("open", "");
   });
+  document.getElementById("dlgClose").addEventListener("click", function () { dlg.close ? dlg.close() : dlg.removeAttribute("open"); });
   document.getElementById("dlgDl").addEventListener("click", function () {
     download(buildText(), fileBase() + ".txt", "text/plain;charset=utf-8");
   });
