@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>回答受け取り設定</title>
+<style>
+  :root {
+    --bg: #f6f5f2; --card: #ffffff; --text: #1f2328; --muted: #656d76; --line: #e2e0da;
+    --accent: #e0662f; --accent-soft: #fbe9df; --code: #f1efea;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #17181a; --card: #212226; --text: #e8e6e3; --muted: #9a9ea5; --line: #34363b;
+      --accent: #f08a55; --accent-soft: #3a2a21; --code: #1b1c1f;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #17181a; --card: #212226; --text: #e8e6e3; --muted: #9a9ea5; --line: #34363b;
+    --accent: #f08a55; --accent-soft: #3a2a21; --code: #1b1c1f;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text); line-height: 1.8; font-size: 16px;
+    font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", Meiryo, sans-serif;
+  }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 24px 16px 80px; }
+  h1 { font-size: 22px; margin: 8px 0 4px; }
+  .sub { color: var(--muted); margin: 0 0 20px; }
+  .box { background: var(--accent-soft); border-radius: 12px; padding: 14px 18px; margin-bottom: 20px; }
+  .box p { margin: 0 0 6px; } .box p:last-child { margin: 0; }
+  ol.steps { list-style: none; counter-reset: s; padding: 0; margin: 0; }
+  ol.steps > li {
+    counter-increment: s; background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+    padding: 14px 18px 14px 58px; margin-bottom: 12px; position: relative;
+  }
+  ol.steps > li::before {
+    content: counter(s); position: absolute; left: 16px; top: 14px; width: 28px; height: 28px; border-radius: 50%;
+    background: var(--accent); color: #fff; font-weight: 800; display: grid; place-items: center; font-size: 15px;
+  }
+  ol.steps b { font-weight: 700; }
+  code { background: var(--code); padding: 1px 6px; border-radius: 4px; font-size: 14px; }
+  pre {
+    background: var(--code); border: 1px solid var(--line); border-radius: 8px; padding: 12px; overflow: auto;
+    font-size: 12.5px; line-height: 1.55; max-height: 340px; margin: 8px 0;
+  }
+  .btn {
+    font: inherit; font-size: 14px; padding: 6px 14px; border-radius: 8px; cursor: pointer;
+    border: 1px solid var(--accent); background: var(--accent); color: #fff; font-weight: 700;
+  }
+  .muted { color: var(--muted); font-size: 14px; }
+  h2 { font-size: 17px; margin: 28px 0 8px; }
+  ul { padding-left: 1.3em; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>ヒアリング回答の受け取り設定（ポポさん用）</h1>
+  <p class="sub">所要時間：5〜10分。ポポさんのGoogleアカウントで行ってください。</p>
+
+  <div class="box">
+    <p><b>この設定をすると…</b></p>
+    <p>スタッフが「ポポさんに送信する」を押した回答が、<b>ポポさんのGoogleスプレッドシートに1人1行で自動保存</b>され、<b>ポポさんのGmailにも通知</b>が届きます。</p>
+    <p>スプレッドシートはポポさんのGoogleドライブにあるので、共有しない限りポポさん以外は見られません（アンケートページを作った人にも見えません）。</p>
+  </div>
+
+  <ol class="steps">
+    <li>
+      <b>新しいスプレッドシートを作る</b><br>
+      <a href="https://sheets.new" target="_blank" rel="noopener">sheets.new</a> を開くと空のスプレッドシートができます。名前は「スタッフヒアリング回答」などに変えておくと分かりやすいです。
+    </li>
+    <li>
+      <b>Apps Script を開く</b><br>
+      メニューの <code>拡張機能</code> → <code>Apps Script</code> を押します。新しいタブでコード画面が開きます。
+    </li>
+    <li>
+      <b>下のコードを貼り付ける</b><br>
+      最初から入っている <code>function myFunction() {…}</code> を全部消して、下のコードをそのまま貼り付け、💾（保存）を押します。
+      <div style="margin-top:8px"><button class="btn" id="copyBtn" type="button">コードをコピー</button> <span class="muted" id="copyMsg"></span></div>
+      <pre id="code"></pre>
+    </li>
+    <li>
+      <b>ウェブアプリとして公開する</b><br>
+      右上の <code>デプロイ</code> → <code>新しいデプロイ</code> → 歯車アイコン → <code>ウェブアプリ</code> を選び、
+      <ul>
+        <li>次のユーザーとして実行：<b>自分</b></li>
+        <li>アクセスできるユーザー：<b>全員</b></li>
+      </ul>
+      にして <code>デプロイ</code> を押します。
+      <p class="muted" style="margin:6px 0 0">「全員」は「誰でも回答を<b>送れる</b>」という意味で、スプレッドシートが見えるわけではありません。</p>
+    </li>
+    <li>
+      <b>アクセスを許可する</b><br>
+      「アクセスを承認」→ 自分のアカウントを選ぶ → 「このアプリは Google で確認されていません」と出たら <code>詳細</code> → <code>（安全ではないページ）に移動</code> → <code>許可</code>。<br>
+      <span class="muted">自分で作ったスクリプトなので、この警告は毎回出るものです。スプレッドシートへの書き込みとメール送信の許可を求めています。</span>
+    </li>
+    <li>
+      <b>URL を送る</b><br>
+      表示された <b>ウェブアプリのURL</b>（<code>https://script.google.com/macros/s/…/exec</code>）をコピーして、アンケートページの管理者に送ってください。管理者がページに設定すると、送信ボタンが使えるようになります。
+      <p class="muted" style="margin:6px 0 0">このURLは「送信用の宛先」なので、知られても回答は読めません。</p>
+    </li>
+  </ol>
+
+  <h2>届いた回答の見方</h2>
+  <ul>
+    <li>スプレッドシートの「回答」シートに、1回の送信につき1行追加されます。</li>
+    <li>「回答テキスト」列に全回答が読みやすい形で入っています。同じ内容がメールでも届きます。</li>
+    <li>スタッフが書き直して再送信した場合は新しい行が増えます。同じ名前のいちばん下の行が最新です。</li>
+  </ul>
+
+  <h2>うまくいかないとき</h2>
+  <ul>
+    <li>コードを貼り直した場合は <code>デプロイ</code> → <code>デプロイを管理</code> → ✏️ → バージョン「新バージョン」→ <code>デプロイ</code> で更新してください（URLは変わりません）。</li>
+    <li>メールが不要なら、コード2行目の <code>SEND_EMAIL</code> を <code>false</code> にしてください。</li>
+  </ul>
+</div>
+
+<script>
+var CODE = [
+"// ポポコミュニティ スタッフヒアリング 回答受け取り",
+"const SEND_EMAIL = true;   // 回答が届いたらメールで知らせる",
+"const NOTIFY_TO = '';       // 通知先メール（空ならこのGoogleアカウント）",
+"const SHEET_NAME = '回答';",
+"",
+"function doPost(e) {",
+"  const lock = LockService.getScriptLock();",
+"  lock.waitLock(20000);",
+"  try {",
+"    const d = JSON.parse(e.postData.contents);",
+"    const ss = SpreadsheetApp.getActiveSpreadsheet();",
+"    const sh = ss.getSheetByName(SHEET_NAME) || ss.insertSheet(SHEET_NAME);",
+"    if (sh.getLastRow() === 0) {",
+"      sh.appendRow(['受信日時', '名前', '担当', '回答数', '回答テキスト', '送信ID', 'データ(JSON)']);",
+"      sh.setFrozenRows(1);",
+"    }",
+"    // 通信のやり直しで同じ送信が2回届いた場合は1回分だけ残す",
+"    const last = sh.getLastRow();",
+"    const ids = last > 1 ? sh.getRange(2, 6, last - 1, 1).getValues().flat() : [];",
+"    if (ids.indexOf(String(d.id)) === -1) {",
+"      sh.appendRow([new Date(), safe(d.name), safe(d.role), safe(d.progress),",
+"                    safe(d.text), safe(d.id), safe(JSON.stringify(d.answers))]);",
+"      if (SEND_EMAIL) {",
+"        const to = NOTIFY_TO || Session.getEffectiveUser().getEmail();",
+"        MailApp.sendEmail(to, '【スタッフヒアリング】' + String(d.name || '名前なし') + 'さんの回答', String(d.text || ''));",
+"      }",
+"    }",
+"    return json({ ok: true });",
+"  } catch (err) {",
+"    return json({ ok: false, error: String(err) });",
+"  } finally {",
+"    lock.releaseLock();",
+"  }",
+"}",
+"",
+"// = や + で始まる文字が数式として動かないようにする",
+"function safe(v) {",
+"  const s = String(v == null ? '' : v).slice(0, 49000);",
+"  return /^[=+\\-@]/.test(s) ? \"'\" + s : s;",
+"}",
+"",
+"function json(o) {",
+"  return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON);",
+"}"
+].join("\n");
+document.getElementById("code").textContent = CODE;
+document.getElementById("copyBtn").addEventListener("click", function () {
+  var msg = document.getElementById("copyMsg");
+  function done() { msg.textContent = "コピーしました"; }
+  function fallback() {
+    var ta = document.createElement("textarea"); ta.value = CODE; document.body.appendChild(ta); ta.select();
+    try { document.execCommand("copy"); done(); } catch (e) { msg.textContent = "コードを長押しして選択してください"; }
+    ta.remove();
+  }
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(CODE).then(done, fallback);
+  else fallback();
+});
+</script>
+</body>
+</html>

@@ -143,6 +143,9 @@
   .finish h2 { margin: 0 0 6px; font-size: 18px; }
   .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
   .saved { font-size: 12px; color: var(--muted); }
+  .sendst { margin: 12px 0 0; padding: 10px 12px; border-radius: 8px; background: var(--accent-soft); font-size: 14px; }
+  .sendst.ok { background: transparent; border: 1px solid var(--ok); color: var(--ok); font-weight: 600; }
+  .btn:disabled { opacity: .6; cursor: default; }
   dialog {
     width: min(720px, calc(100vw - 32px)); max-height: calc(100vh - 48px); border: 1px solid var(--line);
     border-radius: 12px; padding: 0; background: var(--card); color: var(--text);
@@ -203,15 +206,17 @@
 
   <div class="finish" id="finish">
     <h2>回答を提出する</h2>
-    <p class="desc" style="margin:0">「回答をまとめる」を押すと、全回答が1つのテキストになります。「コピー」を押してポポとのLINEに貼り付け、送信してください。長い場合は自動で数回に分かれます。</p>
+    <p class="desc" style="margin:0" id="finishDesc"></p>
     <div class="actions">
-      <button class="btn primary" id="btnExport">回答をまとめる</button>
+      <button class="btn primary" id="btnSend" hidden>ポポさんに送信する</button>
+      <button class="btn" id="btnExport">LINEで送る</button>
       <button class="btn" id="btnJson">バックアップ保存（JSON）</button>
       <button class="btn" id="btnImport">バックアップから復元</button>
       <button class="btn" id="btnPrint">印刷 / PDF</button>
       <button class="btn" id="btnReset">すべて消去</button>
       <input type="file" id="fileIn" accept="application/json,.json" hidden>
     </div>
+    <p class="sendst" id="sendStatus" hidden></p>
     <p class="saved" id="savedAt"></p>
   </div>
 </div>
@@ -455,6 +460,11 @@
       desc: "「自分を一番うまく使うなら、どんな仕事を任せるべきだと思いますか？」を自由に回答してください。",
       parts: [ { k: "area", key: "v" } ]}
   ];
+
+  // ---------- 送信先 ----------
+  // ポポさんが setup.html の手順で発行した Google Apps Script の URL を入れる。
+  // 空のままだと自動送信は無効になり、LINEに貼り付ける方法だけになる。
+  var ENDPOINT = "";
 
   // ---------- 保存 ----------
   var STORE_KEY = "popo-staff-hearing-v1";
@@ -895,6 +905,78 @@
   document.getElementById("dlgDl").addEventListener("click", function () {
     download(buildText(), fileBase() + ".txt", "text/plain;charset=utf-8");
   });
+  // ---------- 送信 ----------
+  var btnSend = document.getElementById("btnSend");
+  var btnExport = document.getElementById("btnExport");
+  var sendStatus = document.getElementById("sendStatus");
+  function setStatus(msg, ok) {
+    sendStatus.hidden = !msg; sendStatus.textContent = msg || "";
+    sendStatus.classList.toggle("ok", !!ok);
+  }
+  function renderSendArea() {
+    var desc = document.getElementById("finishDesc");
+    if (ENDPOINT) {
+      btnSend.hidden = false;
+      btnExport.textContent = "送信できないときはLINEで送る";
+      desc.textContent = "「ポポさんに送信する」を押すと、回答がポポさんのスプレッドシートとメールに直接届きます。ポポさん以外（他のスタッフやページの管理者）には見えません。送信後に書き直して、もう一度送信することもできます。";
+    } else {
+      btnSend.hidden = true;
+      btnExport.textContent = "回答をまとめる（LINEで送る）";
+      btnExport.classList.add("primary");
+      desc.textContent = "「回答をまとめる」を押すと、全回答が1つのテキストになります。「コピー」を押してポポさんとのLINEに貼り付け、送信してください。長い場合は自動で数回に分かれます。";
+    }
+    if (S.submittedAt) setStatus("✓ " + new Date(S.submittedAt).toLocaleString("ja-JP") + " にポポさんへ送信済み", true);
+    else setStatus("");
+  }
+  function newId() {
+    return Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 10);
+  }
+  function postAnswers(payload) {
+    var body = JSON.stringify(payload);
+    // Content-Type を付けない（text/plain）ことで、Apps Script でも CORS の事前確認なしに送れる
+    return fetch(ENDPOINT, { method: "POST", body: body })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!d || !d.ok) { var e = new Error((d && d.error) || "送信先でエラーが起きました"); e.server = true; throw e; }
+        return true;
+      })
+      .catch(function (err) {
+        if (err.server) throw err;
+        // 返事が読めなかった場合だけ、返事を待たない方式で再送する（同じIDは送信先で重複登録されない）
+        return fetch(ENDPOINT, { method: "POST", mode: "no-cors", body: body }).then(function () { return false; });
+      });
+  }
+  btnSend.addEventListener("click", function () {
+    var name = (get("q0", "name") || "").trim();
+    if (!name) {
+      alert("最初の「お名前」を入力してから送信してください。");
+      document.getElementById("q0").scrollIntoView({ behavior: "smooth" });
+      return;
+    }
+    var qs = Q.filter(function (q) { return q.no; });
+    var left = qs.length - qs.filter(isAnswered).length;
+    var msg = (left ? "未回答の質問が " + left + " 問あります。\n" : "") +
+      (S.submittedAt ? "前回の送信内容を、今の内容で送り直します。\n" : "") + "ポポさんに送信しますか？";
+    if (!confirm(msg)) return;
+    flush();
+    if (!S.pendingId) { S.pendingId = newId(); save(); }
+    var payload = {
+      id: S.pendingId, name: name, role: (get("q0", "role") || "").trim(),
+      progress: (qs.length - left) + "/" + qs.length, text: buildText(), answers: S.answers
+    };
+    btnSend.disabled = true; btnSend.textContent = "送信中…";
+    setStatus("送信中です。画面を閉じずにお待ちください。");
+    postAnswers(payload).then(function (confirmed) {
+      S.submittedAt = new Date().toISOString(); delete S.pendingId; save();
+      renderSendArea();
+      if (!confirmed) setStatus("✓ 送信しました（" + new Date(S.submittedAt).toLocaleString("ja-JP") + "）。念のため、ポポさんに「送りました」と一言伝えてください。", true);
+      toast("送信しました");
+    }, function (err) {
+      setStatus("送信できませんでした（" + err.message + "）。電波の良い場所でもう一度押すか、「LINEで送る」を使ってください。");
+    }).then(function () { btnSend.disabled = false; btnSend.textContent = "ポポさんに送信する"; });
+  });
+  renderSendArea();
+
   document.getElementById("btnJson").addEventListener("click", function () {
     download(JSON.stringify({ app: "popo-staff-hearing", version: 1, answers: S.answers, updated: S.updated }, null, 2),
       fileBase() + ".json", "application/json");
@@ -921,7 +1003,7 @@
     S = { answers: {}, updated: null };
     try { localStorage.removeItem(STORE_KEY); } catch (e) {}
     document.getElementById("savedAt").textContent = "";
-    build(); window.scrollTo(0, 0); toast("消去しました");
+    build(); renderSendArea(); window.scrollTo(0, 0); toast("消去しました");
   });
 })();
 </script>
