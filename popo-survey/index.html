@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>スタッフヒアリング</title>
+<style>
+  :root {
+    --bg: #f6f5f2;
+    --card: #ffffff;
+    --text: #1f2328;
+    --muted: #656d76;
+    --line: #e2e0da;
+    --accent: #e0662f;
+    --accent-soft: #fbe9df;
+    --accent-text: #ffffff;
+    --ok: #2f8f5b;
+    --field: #fbfbfa;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #17181a;
+      --card: #212226;
+      --text: #e8e6e3;
+      --muted: #9a9ea5;
+      --line: #34363b;
+      --accent: #f08a55;
+      --accent-soft: #3a2a21;
+      --accent-text: #1a1a1a;
+      --ok: #5cc28a;
+      --field: #1b1c1f;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #17181a; --card: #212226; --text: #e8e6e3; --muted: #9a9ea5; --line: #34363b;
+    --accent: #f08a55; --accent-soft: #3a2a21; --accent-text: #1a1a1a; --ok: #5cc28a; --field: #1b1c1f;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", Meiryo, sans-serif;
+    line-height: 1.7; font-size: 16px;
+  }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 0 16px 120px; }
+  header.top {
+    position: sticky; top: 0; z-index: 10; background: var(--bg);
+    border-bottom: 1px solid var(--line);
+  }
+  header.top .inner { max-width: 760px; margin: 0 auto; padding: 10px 16px; display: flex; align-items: center; gap: 12px; }
+  header.top .ttl { font-weight: 700; font-size: 15px; white-space: nowrap; }
+  .bar { flex: 1; height: 8px; background: var(--line); border-radius: 99px; overflow: hidden; }
+  .bar > i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .3s; }
+  .pct { font-size: 13px; color: var(--muted); white-space: nowrap; min-width: 64px; text-align: right; }
+  nav.secs { max-width: 760px; margin: 0 auto; padding: 0 16px 8px; display: flex; gap: 6px; overflow-x: auto; }
+  nav.secs a {
+    font-size: 13px; padding: 3px 10px; border-radius: 99px; border: 1px solid var(--line);
+    color: var(--muted); text-decoration: none; white-space: nowrap; background: var(--card);
+  }
+  h1 { font-size: 24px; margin: 28px 0 4px; }
+  .sub { color: var(--muted); margin: 0 0 16px; }
+  .intro { background: var(--accent-soft); border-radius: 12px; padding: 16px 18px; margin-bottom: 20px; }
+  .intro p { margin: 0 0 8px; }
+  .intro ul { margin: 4px 0 8px; padding-left: 1.3em; }
+  .intro p:last-child { margin-bottom: 0; }
+  h2.sec { font-size: 18px; margin: 36px 0 12px; padding-top: 8px; scroll-margin-top: 100px; }
+  .q {
+    background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+    padding: 16px 18px; margin-bottom: 14px; scroll-margin-top: 100px;
+  }
+  .q h3 { font-size: 16px; margin: 0 0 4px; display: flex; gap: 8px; align-items: baseline; }
+  .q h3 .no { color: var(--accent); font-weight: 800; min-width: 2em; }
+  .q h3 .done { margin-left: auto; font-size: 12px; color: var(--ok); font-weight: 600; visibility: hidden; white-space: nowrap; }
+  .q.answered h3 .done { visibility: visible; }
+  .desc { color: var(--muted); font-size: 14px; margin: 0 0 10px; white-space: pre-line; }
+  .part { margin-top: 12px; }
+  .part > label.pl, .part > .pl { display: block; font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+  input[type=text], input[type=number], textarea {
+    width: 100%; font: inherit; font-size: 15px; color: var(--text); background: var(--field);
+    border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px;
+  }
+  textarea { min-height: 84px; resize: vertical; }
+  input:focus, textarea:focus { outline: 2px solid var(--accent); outline-offset: -1px; border-color: transparent; }
+  .opts { display: flex; flex-direction: column; gap: 4px; }
+  .opts.inline { flex-direction: row; flex-wrap: wrap; gap: 6px; }
+  .opt {
+    display: flex; gap: 8px; align-items: flex-start; padding: 6px 10px; border: 1px solid var(--line);
+    border-radius: 8px; cursor: pointer; font-size: 15px; background: var(--field);
+  }
+  .opt input { margin-top: 6px; accent-color: var(--accent); }
+  .opt.on { border-color: var(--accent); background: var(--accent-soft); }
+  .scale { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+  .scale button {
+    font: inherit; font-size: 15px; width: 40px; height: 36px; border: 0; border-right: 1px solid var(--line);
+    background: var(--field); color: var(--text); cursor: pointer;
+  }
+  .scale button:last-child { border-right: 0; }
+  .scale button.on { background: var(--accent); color: var(--accent-text); font-weight: 700; }
+  .scale-hint { font-size: 12px; color: var(--muted); margin-left: 8px; }
+  .rows .row {
+    border: 1px dashed var(--line); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; position: relative;
+  }
+  .rows .row .rn { font-size: 12px; color: var(--muted); font-weight: 700; margin-bottom: 2px; }
+  .rows .row .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .rows .row .cols .c.full { grid-column: 1 / -1; }
+  .rows .row .cols .c label { font-size: 12px; color: var(--muted); display: block; }
+  .rows .del {
+    position: absolute; top: 6px; right: 8px; border: 0; background: none; color: var(--muted);
+    cursor: pointer; font-size: 13px;
+  }
+  .btn {
+    font: inherit; font-size: 14px; padding: 7px 14px; border-radius: 8px; cursor: pointer;
+    border: 1px solid var(--line); background: var(--card); color: var(--text);
+  }
+  .btn.primary { background: var(--accent); color: var(--accent-text); border-color: var(--accent); font-weight: 700; }
+  .btn.small { font-size: 13px; padding: 4px 10px; }
+  .pctwrap { display: flex; align-items: center; gap: 12px; }
+  .pctwrap input[type=range] { flex: 1; accent-color: var(--accent); }
+  .pctwrap .val { min-width: 56px; font-weight: 700; font-size: 18px; text-align: right; }
+  .pctwrap .val.empty { color: var(--muted); font-weight: 400; font-size: 14px; }
+  ol.rank { list-style: none; padding: 0; margin: 0; }
+  ol.rank li {
+    display: flex; align-items: center; gap: 8px; padding: 6px 8px; border: 1px solid var(--line);
+    border-radius: 8px; margin-bottom: 4px; background: var(--field);
+  }
+  ol.rank li .n { width: 1.8em; text-align: center; font-weight: 800; color: var(--muted); }
+  ol.rank li:nth-child(-n+3) .n { color: var(--accent); }
+  ol.rank li .nm { flex: 1; }
+  ol.rank li button {
+    font: inherit; border: 1px solid var(--line); background: var(--card); color: var(--text);
+    border-radius: 6px; width: 34px; height: 30px; cursor: pointer;
+  }
+  ol.rank li button:disabled { opacity: .3; cursor: default; }
+  .grid { width: 100%; border-collapse: collapse; }
+  .grid td { padding: 6px 0; border-bottom: 1px solid var(--line); vertical-align: middle; }
+  .grid td:first-child { padding-right: 8px; font-size: 15px; }
+  .grid td:last-child { text-align: right; white-space: nowrap; }
+  .grid .scale button { width: 34px; height: 32px; }
+  .note { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .finish {
+    background: var(--card); border: 2px solid var(--accent); border-radius: 12px; padding: 18px; margin-top: 28px;
+  }
+  .finish h2 { margin: 0 0 6px; font-size: 18px; }
+  .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+  .saved { font-size: 12px; color: var(--muted); }
+  dialog {
+    width: min(720px, calc(100vw - 32px)); max-height: calc(100vh - 48px); border: 1px solid var(--line);
+    border-radius: 12px; padding: 0; background: var(--card); color: var(--text);
+  }
+  dialog::backdrop { background: rgba(0,0,0,.45); }
+  dialog .dh { padding: 14px 16px; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 8px; }
+  dialog .dh b { flex: 1; }
+  dialog pre {
+    margin: 0; padding: 14px 16px; white-space: pre-wrap; word-break: break-word; font-size: 13px;
+    max-height: 60vh; overflow: auto; font-family: inherit;
+  }
+  dialog .df { padding: 12px 16px; border-top: 1px solid var(--line); display: flex; flex-wrap: wrap; gap: 8px; }
+  .toast {
+    position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: var(--text); color: var(--bg);
+    padding: 8px 16px; border-radius: 99px; font-size: 14px; opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 50;
+  }
+  .toast.show { opacity: 1; }
+  @media (max-width: 560px) {
+    .rows .row .cols { grid-template-columns: 1fr; }
+    .grid td { display: block; border: 0; padding: 2px 0; text-align: left !important; }
+    .grid tr { display: block; border-bottom: 1px solid var(--line); padding: 6px 0; }
+    header.top .ttl { display: none; }
+  }
+  @media print {
+    header.top, .actions, .finish, .rows .del, .addrow { display: none !important; }
+    .q { break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="inner">
+    <span class="ttl">スタッフヒアリング</span>
+    <div class="bar"><i id="barFill"></i></div>
+    <span class="pct" id="pct">0 / 0</span>
+  </div>
+  <nav class="secs" id="secNav"></nav>
+</header>
+
+<div class="wrap">
+  <h1>ポポコミュニティ スタッフ完全分析ヒアリング</h1>
+  <p class="sub">入力内容はこの端末に自動保存されます。途中でやめても続きから再開できます。</p>
+
+  <div class="intro">
+    <p><b>このアンケートは、人事評価や査定のためのものではありません。</b></p>
+    <p>今後コミュニティが大きくなったときに、</p>
+    <ul>
+      <li>誰が何を担当すると一番やりやすいか</li>
+      <li>今より仕事を楽にできる部分はないか</li>
+      <li>AIやシステムに任せられる仕事はないか</li>
+      <li>今のうちに改善した方がいい部分はどこか</li>
+    </ul>
+    <p>を整理するために使います。良く見せる必要はありません。「苦手」「やりたくない」「分からない」も重要な情報です。できるだけ実際の状況で回答してください。</p>
+  </div>
+
+  <div id="form"></div>
+
+  <div class="finish" id="finish">
+    <h2>回答を提出する</h2>
+    <p class="desc" style="margin:0">「回答をまとめる」を押すと、全回答が1つのテキストになります。コピーしてポポにLINE等で送るか、ファイルを保存して送ってください。</p>
+    <div class="actions">
+      <button class="btn primary" id="btnExport">回答をまとめる</button>
+      <button class="btn" id="btnJson">バックアップ保存（JSON）</button>
+      <button class="btn" id="btnImport">バックアップから復元</button>
+      <button class="btn" id="btnPrint">印刷 / PDF</button>
+      <button class="btn" id="btnReset">すべて消去</button>
+      <input type="file" id="fileIn" accept="application/json,.json" hidden>
+    </div>
+    <p class="saved" id="savedAt"></p>
+  </div>
+</div>
+
+<dialog id="dlg">
+  <div class="dh"><b>回答まとめ</b><button class="btn small" id="dlgClose">閉じる</button></div>
+  <pre id="dlgText"></pre>
+  <div class="df">
+    <button class="btn primary" id="dlgCopy">テキストをコピー</button>
+    <button class="btn" id="dlgDl">テキストファイルを保存</button>
+  </div>
+</dialog>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function () {
+  "use strict";
+
+  // ---------- 質問定義 ----------
+  var SECTIONS = [
+    { id: "S0", title: "回答者情報" },
+    { id: "A", title: "A｜全スタッフ共通・必須質問" },
+    { id: "B", title: "B｜スケール耐性テスト" },
+    { id: "C", title: "C｜モチベーション・将来" },
+    { id: "D", title: "D｜最後の自己評価" }
+  ];
+
+  var Q = [
+    { id: "q0", sec: "S0", no: "", title: "あなたについて", parts: [
+      { k: "text", key: "name", label: "お名前（ニックネーム可）", ph: "例：たろう" },
+      { k: "text", key: "role", label: "主な担当・肩書き（任意）", ph: "例：会員サポート" }
+    ]},
+
+    // ---- A ----
+    { id: "q1", sec: "A", no: "1", title: "現在担当している仕事",
+      desc: "現在ポポコミュニティで行っている仕事を、できるだけ具体的にすべて書いてください。\n正確に分からなければ概算でOKです。",
+      parts: [
+        { k: "rows", key: "tasks", min: 1, max: 30, addLabel: "＋ 仕事を追加", cols: [
+          { key: "what", label: "①仕事内容", ph: "例：新規会員との電話面談", full: true },
+          { key: "freq", label: "②頻度", ph: "例：週3〜5件" },
+          { key: "per", label: "③1回あたり時間", ph: "例：30分程度" },
+          { key: "month", label: "④月合計時間", ph: "例：月8時間程度" }
+        ]}
+      ]},
+    { id: "q2", sec: "A", no: "2", title: "現在の総稼働時間",
+      desc: "ポポコミュニティ関連で使っている時間は、月何時間くらいですか？",
+      parts: [
+        { k: "text", key: "hours", label: "月の時間（分かれば）", ph: "例：月25時間" },
+        { k: "radio", key: "range", label: "分からなければ目安を選択", inline: true,
+          opts: ["5時間未満", "5〜10時間", "10〜20時間", "20〜40時間", "40〜80時間", "80時間以上"] }
+      ]},
+    { id: "q3", sec: "A", no: "3", title: "仕事量の余裕",
+      desc: "現在の仕事量を100%のキャパシティとして考えた場合、現在どの程度使っていますか？",
+      parts: [
+        { k: "percent", key: "usage", label: "使っているキャパシティ" },
+        { k: "area", key: "hard", label: "「これ以上増えると厳しい」と思う仕事" }
+      ]},
+    { id: "q4", sec: "A", no: "4", title: "得意な仕事",
+      desc: "現在または過去に経験した仕事の中から、自分が得意だと思うものを最大3つ。\nその能力が実際に役立った直近3か月程度の具体例を最低1つ書いてください。",
+      parts: [
+        { k: "rows", key: "items", fixed: 3, cols: [
+          { key: "what", label: "得意な仕事", ph: "", full: true },
+          { key: "lv", label: "得意度（1〜5）", k: "scale", full: true },
+          { key: "ex", label: "直近3か月の具体例", k: "area", full: true }
+        ]}
+      ]},
+    { id: "q5", sec: "A", no: "5", title: "苦手な仕事",
+      desc: "次の4種類を分けて回答してください。同じ仕事が複数に入ってもOKです。",
+      parts: [
+        { k: "area", key: "ability", label: "①能力的に苦手" },
+        { k: "area", key: "slow", label: "②時間がかかる" },
+        { k: "area", key: "mistake", label: "③ミスしやすい" },
+        { k: "area", key: "mental", label: "④できるけど精神的にやりたくない" }
+      ]},
+    { id: "q6", sec: "A", no: "6", title: "逆に「好きな仕事」",
+      desc: "報酬を一旦無視した場合、やっていて面白い・苦にならない仕事を最大3つ教えてください。",
+      parts: [
+        { k: "rows", key: "items", fixed: 3, cols: [ { key: "what", label: "好きな仕事", full: true } ] }
+      ]},
+    { id: "q7", sec: "A", no: "7", title: "処理能力",
+      desc: "仕事が複数同時に来た場合、何件程度なら問題なく並行できますか？\nまた、どの程度になると次のようになると思いますか？",
+      parts: [
+        { k: "text", key: "ok", label: "問題なく並行できる件数", ph: "例：3件くらい" },
+        { k: "text", key: "late", label: "対応が遅れる", ph: "例：5件以上" },
+        { k: "text", key: "forget", label: "忘れる", ph: "" },
+        { k: "text", key: "quality", label: "品質が落ちる", ph: "" },
+        { k: "text", key: "stress", label: "ストレスが大きくなる", ph: "" }
+      ]},
+    { id: "q8", sec: "A", no: "8", title: "自分だけで判断できる範囲",
+      desc: "現在の仕事を以下に分けると、それぞれどんな仕事が入りますか？",
+      parts: [
+        { k: "area", key: "a", label: "A：自分だけで決めてよい" },
+        { k: "area", key: "b", label: "B：基本自分で決めるが重要部分だけ確認" },
+        { k: "area", key: "c", label: "C：ポポ等の確認が必要" },
+        { k: "area", key: "d", label: "D：自分では判断できない" }
+      ]},
+    { id: "q9", sec: "A", no: "9", title: "ポポ待ち",
+      desc: "現在、「ポポの返事・判断・確認待ちで仕事が止まる」ことはありますか？",
+      parts: [
+        { k: "radio", key: "has", inline: true, opts: ["よくある", "たまにある", "ほぼない"] },
+        { k: "area", key: "detail", label: "ある場合：何について・月何回程度・どれくらい止まるか" }
+      ]},
+    { id: "q10", sec: "A", no: "10", title: "ポポが1か月いなかったら？",
+      desc: "明日からポポと1か月連絡が取れなくなったと仮定してください。",
+      parts: [
+        { k: "area", key: "keep", label: "①そのまま続けられる仕事" },
+        { k: "area", key: "trouble", label: "②少し困るが続けられる仕事" },
+        { k: "area", key: "stop", label: "③完全に止まる仕事" }
+      ]},
+    { id: "q11", sec: "A", no: "11", title: "ポポから引き継げそうな仕事",
+      desc: "現在ポポが担当している仕事の中で、「自分でもできる」「ルールさえあればできそう」と思うものはありますか？",
+      parts: [ { k: "area", key: "v" } ]},
+    { id: "q12", sec: "A", no: "12", title: "逆にポポが残すべき仕事",
+      desc: "「これは他の人へ渡さず、ポポがやった方がいい」と思う仕事を最大3つ。理由もお願いします。",
+      parts: [
+        { k: "rows", key: "items", fixed: 3, cols: [
+          { key: "what", label: "仕事", full: true },
+          { key: "why", label: "理由", full: true }
+        ]}
+      ]},
+    { id: "q13", sec: "A", no: "13", title: "AI利用度",
+      desc: "AI利用能力を自己評価してください。",
+      parts: [
+        { k: "scale", key: "lv", opts: [
+          "ほぼ使わない", "たまに質問する", "普通に仕事で使える", "かなり活用できる", "AIを使って業務そのものを設計できる"
+        ]},
+        { k: "area", key: "tools", label: "現在使っているAIと用途", ph: "例：ChatGPT → 告知文の下書き、Claude → 資料の要約" }
+      ]},
+    { id: "q14", sec: "A", no: "14", title: "AIへ50%渡すなら？",
+      desc: "現在自分がやっている仕事の50%をAIへ任せなければならないとしたら、何を任せますか？\n「AIだけでは無理だが、人間＋AIなら可能」でもOKです。",
+      parts: [ { k: "area", key: "v" } ]},
+    { id: "q15", sec: "A", no: "15", title: "自動化したい仕事",
+      desc: "毎回同じことをしている、コピペが多い、確認作業が多い、集計が面倒など、「これ人間が毎回やる必要ある？」と思っている作業をすべて教えてください。",
+      parts: [ { k: "area", key: "v" } ]},
+    { id: "q16", sec: "A", no: "16", title: "一緒に仕事しやすい人",
+      desc: "業務上、一緒に仕事するとやりやすい人がいれば教えてください。\n理由は「レスが早い」「説明が上手い」「自分の苦手を補ってくれる」など業務面で。",
+      parts: [
+        { k: "rows", key: "items", min: 1, max: 10, addLabel: "＋ 人を追加", cols: [
+          { key: "who", label: "名前" },
+          { key: "why", label: "理由" }
+        ]}
+      ]},
+    { id: "q17", sec: "A", no: "17", title: "役割が被っている人",
+      desc: "「自分と○○さん、同じようなことをやっているな」と思う部分はありますか？",
+      parts: [
+        { k: "radio", key: "has", inline: true, opts: ["ある", "ない", "分からない"] },
+        { k: "area", key: "detail", label: "ある場合：誰と何が重複していますか？" }
+      ]},
+    { id: "q18", sec: "A", no: "18", title: "会員が一番困っていること",
+      desc: "あなたから見て、現在会員が最も困っていることを最大3つ教えてください。",
+      parts: [
+        { k: "rows", key: "items", fixed: 3, cols: [ { key: "what", label: "困っていること", full: true } ] },
+        { k: "area", key: "faq", label: "実際によく受ける質問や相談" }
+      ]},
+    { id: "q19", sec: "A", no: "19", title: "会員が止まる場所",
+      desc: "会員は次の流れのどこで一番止まっていると思いますか？",
+      parts: [
+        { k: "radio", key: "where", opts: ["案件を知る", "興味を持つ", "申し込む", "作業する", "完了する", "報酬を受け取る"], arrow: true },
+        { k: "area", key: "why", label: "理由" }
+      ]},
+    { id: "q20", sec: "A", no: "20", title: "ポポが知らなそうな問題",
+      desc: "現場で「たぶんポポはこれをあまり把握していない」と思う問題・面倒・会員の不満・無駄な作業などはありますか？小さなことでもOKです。",
+      parts: [ { k: "area", key: "v" } ]},
+    { id: "q21", sec: "A", no: "21", title: "今すぐ一つだけ改善できるなら？",
+      desc: "予算・人員等を一旦無視して、コミュニティ運営を一つだけ改善できるとしたら何を変えますか？",
+      parts: [ { k: "area", key: "v" } ]},
+    { id: "q22", sec: "A", no: "22", title: "仕事の20%を捨てる",
+      desc: "現在行っている仕事のうち、20%を明日からやめなければならないとしたら、何をやめますか？",
+      parts: [
+        { k: "area", key: "what", label: "やめる仕事" },
+        { k: "area", key: "why", label: "理由" }
+      ]},
+    { id: "q23", sec: "A", no: "23", title: "自分がポポなら？",
+      desc: "あなたが1か月だけポポの代わりに経営者になるなら、最初に改善することを3つ教えてください。",
+      parts: [
+        { k: "rows", key: "items", fixed: 3, cols: [ { key: "what", label: "改善すること", full: true } ] }
+      ]},
+
+    // ---- B ----
+    { id: "q24", sec: "B", no: "24", title: "月利益500万円になったら？",
+      desc: "今の組織・やり方のまま事業規模だけが約2倍になった場合、最初に壊れる・詰まると思うところはどこですか？",
+      parts: [ { k: "area", key: "v" } ]},
+    { id: "q25", sec: "B", no: "25", title: "会員2,000人になったら？",
+      desc: "現在約1,020人の会員が2,000人になった場合、あなた自身の仕事で何が増え、何が問題になると思いますか？",
+      parts: [
+        { k: "area", key: "inc", label: "増えること" },
+        { k: "area", key: "prob", label: "問題になること" }
+      ]},
+    { id: "q26", sec: "B", no: "26", title: "案件が月1→5になったら？",
+      desc: "毎月新案件を5件ローンチするようになった場合、自分の担当部分で何がボトルネックになりますか？\n問題なさそうなら「問題なし」でOKです。",
+      parts: [ { k: "area", key: "v" } ]},
+    { id: "q27", sec: "B", no: "27", title: "ライブが月10回になったら？",
+      desc: "ライブを月10回程度行う場合、どんな問題が発生しそうですか？\n自分に関係がなければ「特になし」でOKです。",
+      parts: [ { k: "area", key: "v" } ]},
+
+    // ---- C ----
+    { id: "q28", sec: "C", no: "28", title: "何がモチベーションになる？",
+      desc: "↑↓ボタンで重要な順に並べてください（上が一番重要）。上位3つについて理由もお願いします。",
+      parts: [
+        { k: "rank", key: "order", items: ["報酬", "自由な時間", "裁量", "役職・責任", "人から感謝される", "成果が数字で見える", "新しいことを覚える", "面白いことをする", "コミュニティが成長する", "その他"] },
+        { k: "text", key: "other", label: "「その他」の内容（あれば）" },
+        { k: "area", key: "r1", label: "1位の理由" },
+        { k: "area", key: "r2", label: "2位の理由" },
+        { k: "area", key: "r3", label: "3位の理由" }
+      ]},
+    { id: "q29", sec: "C", no: "29", title: "今後増やしたい仕事",
+      desc: "6〜12か月後、もっとやっていたい仕事を教えてください。",
+      parts: [ { k: "area", key: "v" } ]},
+    { id: "q30", sec: "C", no: "30", title: "減らしたい仕事",
+      desc: "6〜12か月後には減らしたい・やめたい仕事を教えてください。",
+      parts: [ { k: "area", key: "v" } ]},
+    { id: "q31", sec: "C", no: "31", title: "追加稼働",
+      desc: "条件が合えば、現在より仕事を増やすことは可能ですか？",
+      parts: [
+        { k: "radio", key: "can", inline: true, opts: ["可能", "条件次第で可能", "難しい"] },
+        { k: "text", key: "hours", label: "可能なら月＋何時間程度まで？", ph: "例：＋10時間" },
+        { k: "area", key: "cond", label: "どんな条件なら増やしたいですか？" }
+      ]},
+    { id: "q32", sec: "C", no: "32", title: "突然1か月休んだら？",
+      desc: "あなたが明日から1か月休んだ場合について教えてください。",
+      parts: [
+        { k: "text", key: "who", label: "あなたの仕事を代わりにできる人", ph: "例：○○さん（一部のみ）／いない" },
+        { k: "radio", key: "manual", label: "マニュアル", inline: true, opts: ["あり", "一部あり", "なし"] },
+        { k: "text", key: "days", label: "引き継ぎに必要な日数", ph: "例：3日程度" }
+      ]},
+    { id: "q33", sec: "C", no: "33", title: "隠れている能力",
+      desc: "現在コミュニティではほぼ使っていない能力はありますか？「これ実はできます」があれば全部教えてください。",
+      parts: [
+        { k: "checks", key: "cats", label: "当てはまるもの（複数可）", opts: ["過去の仕事", "本業", "資格", "趣味", "人脈", "PC能力", "営業", "デザイン", "動画", "数字", "教育", "マネジメント", "その他"] },
+        { k: "area", key: "detail", label: "具体的に", ph: "例：前職で経理5年 → 報酬計算の仕組み化ができます" }
+      ]},
+
+    // ---- D ----
+    { id: "q34", sec: "D", no: "34", title: "自己評価（1〜5）",
+      desc: "5＝かなり得意、1＝かなり苦手",
+      parts: [
+        { k: "grid", key: "g", items: ["人への説明", "会員対応", "営業・訴求", "数字・分析", "PC操作", "AI活用", "資料作成", "文章作成", "情報整理", "スケジュール管理", "細かい確認", "ミスの少なさ", "仕事の速さ", "トラブル対応", "人への指示", "人をまとめる", "新しいアイデア", "仕組み作り", "自分で判断する力", "責任の大きい仕事への耐性"] }
+      ]},
+    { id: "q35", sec: "D", no: "35", title: "自分を一番うまく使うなら？",
+      desc: "「自分を一番うまく使うなら、どんな仕事を任せるべきだと思いますか？」を自由に回答してください。",
+      parts: [ { k: "area", key: "v" } ]}
+  ];
+
+  // ---------- 保存 ----------
+  var STORE_KEY = "popo-staff-hearing-v1";
+  var S = { answers: {}, updated: null };
+  try {
+    var raw = localStorage.getItem(STORE_KEY);
+    if (raw) { var parsed = JSON.parse(raw); if (parsed && parsed.answers) S = parsed; }
+  } catch (e) {}
+
+  var saveTimer = null;
+  function save() {
+    S.updated = new Date().toISOString();
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(function () {
+      saveTimer = null;
+      try { localStorage.setItem(STORE_KEY, JSON.stringify(S)); } catch (e) {}
+      showSaved();
+    }, 300);
+  }
+  function flush() {
+    if (!saveTimer) return;
+    clearTimeout(saveTimer); saveTimer = null;
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(S)); } catch (e) {}
+  }
+  window.addEventListener("pagehide", flush);
+  document.addEventListener("visibilitychange", function () { if (document.visibilityState === "hidden") flush(); });
+  function showSaved() {
+    var el = document.getElementById("savedAt");
+    if (S.updated) el.textContent = "最終保存：" + new Date(S.updated).toLocaleString("ja-JP");
+  }
+  function get(qid, key) { return S.answers[qid] ? S.answers[qid][key] : undefined; }
+  function set(qid, key, val) {
+    if (!S.answers[qid]) S.answers[qid] = {};
+    S.answers[qid][key] = val;
+    save();
+    markAnswered(qid);
+    updateProgress();
+  }
+
+  // ---------- 表示 ----------
+  function h(tag, attrs, kids) {
+    var el = document.createElement(tag);
+    if (attrs) for (var a in attrs) {
+      if (a === "class") el.className = attrs[a];
+      else if (a === "text") el.textContent = attrs[a];
+      else if (a.slice(0, 2) === "on") el.addEventListener(a.slice(2), attrs[a]);
+      else el.setAttribute(a, attrs[a]);
+    }
+    (kids || []).forEach(function (k) { if (k) el.appendChild(typeof k === "string" ? document.createTextNode(k) : k); });
+    return el;
+  }
+
+  function autoGrow(t) { t.style.height = "auto"; t.style.height = Math.max(84, t.scrollHeight + 2) + "px"; }
+
+  function textInput(val, ph, onChange) {
+    var i = h("input", { type: "text", placeholder: ph || "" });
+    i.value = val || "";
+    i.addEventListener("input", function () { onChange(i.value); });
+    return i;
+  }
+  function areaInput(val, ph, onChange) {
+    var t = h("textarea", { placeholder: ph || "" });
+    t.value = val || "";
+    t.addEventListener("input", function () { autoGrow(t); onChange(t.value); });
+    requestAnimationFrame(function () { autoGrow(t); });
+    return t;
+  }
+  function scaleInput(val, onChange) {
+    var wrap = h("span", { class: "scale" });
+    var btns = [];
+    for (var n = 1; n <= 5; n++) (function (n) {
+      var b = h("button", { type: "button", text: String(n), "aria-pressed": String(val === n) });
+      if (val === n) b.classList.add("on");
+      b.addEventListener("click", function () {
+        var nv = (val === n) ? null : n;
+        val = nv;
+        btns.forEach(function (x, i) { x.classList.toggle("on", nv === i + 1); x.setAttribute("aria-pressed", String(nv === i + 1)); });
+        onChange(nv);
+      });
+      btns.push(b); wrap.appendChild(b);
+    })(n);
+    return wrap;
+  }
+  function optList(type, name, opts, val, inline, onChange) {
+    var box = h("div", { class: "opts" + (inline ? " inline" : "") });
+    var labels = [];
+    opts.forEach(function (o, idx) {
+      var checked = type === "radio" ? val === o : (val || []).indexOf(o) >= 0;
+      var inp = h("input", { type: type, name: name, value: o });
+      inp.checked = checked;
+      var lb = h("label", { class: "opt" + (checked ? " on" : "") }, [inp, h("span", { text: o })]);
+      labels.push(lb);
+      if (type === "radio") {
+        // クリックで選択解除できるように
+        lb.addEventListener("click", function (e) {
+          e.preventDefault();
+          var nv = (val === o) ? null : o;
+          val = nv;
+          labels.forEach(function (l, i) {
+            var on = opts[i] === nv; l.classList.toggle("on", on); l.querySelector("input").checked = on;
+          });
+          onChange(nv);
+        });
+      } else {
+        inp.addEventListener("change", function () {
+          var cur = (val || []).slice();
+          if (inp.checked) { if (cur.indexOf(o) < 0) cur.push(o); }
+          else cur = cur.filter(function (x) { return x !== o; });
+          cur.sort(function (a, b) { return opts.indexOf(a) - opts.indexOf(b); });
+          val = cur;
+          lb.classList.toggle("on", inp.checked);
+          onChange(cur);
+        });
+      }
+      box.appendChild(lb);
+    });
+    return box;
+  }
+
+  function renderPart(q, p) {
+    var box = h("div", { class: "part" });
+    var lab = p.label ? h("div", { class: "pl", text: p.label }) : null;
+    if (lab) box.appendChild(lab);
+    var cur = get(q.id, p.key);
+    var setter = function (v) { set(q.id, p.key, v); };
+
+    if (p.k === "text") box.appendChild(textInput(cur, p.ph, setter));
+    else if (p.k === "area") box.appendChild(areaInput(cur, p.ph, setter));
+    else if (p.k === "radio") {
+      box.appendChild(optList("radio", q.id + "_" + p.key, p.opts, cur, p.inline, setter));
+      if (p.arrow) box.appendChild(h("div", { class: "note", text: p.opts.join(" → ") }));
+    }
+    else if (p.k === "checks") box.appendChild(optList("checkbox", q.id + "_" + p.key, p.opts, cur, true, setter));
+    else if (p.k === "scale") {
+      if (p.opts) {
+        var named = p.opts.map(function (o, i) { return (i + 1) + "：" + o; });
+        var curName = cur ? named[cur - 1] : null;
+        box.appendChild(optList("radio", q.id + "_" + p.key, named, curName, false, function (v) {
+          set(q.id, p.key, v ? named.indexOf(v) + 1 : null);
+        }));
+      } else box.appendChild(scaleInput(cur, setter));
+    }
+    else if (p.k === "percent") box.appendChild(renderPercent(cur, setter));
+    else if (p.k === "rows") box.appendChild(renderRows(q, p));
+    else if (p.k === "rank") box.appendChild(renderRank(q, p));
+    else if (p.k === "grid") box.appendChild(renderGrid(q, p));
+    return box;
+  }
+
+  function renderPercent(cur, setter) {
+    var wrap = h("div", { class: "pctwrap" });
+    var r = h("input", { type: "range", min: "0", max: "100", step: "5", "aria-label": "キャパシティ使用率" });
+    r.value = cur == null ? 50 : cur;
+    var v = h("span", { class: "val" + (cur == null ? " empty" : ""), text: cur == null ? "未選択" : cur + "%" });
+    r.addEventListener("input", function () {
+      v.textContent = r.value + "%"; v.classList.remove("empty"); setter(Number(r.value));
+    });
+    wrap.appendChild(r); wrap.appendChild(v);
+    return wrap;
+  }
+
+  function renderRows(q, p) {
+    var wrap = h("div", { class: "rows" });
+    var list = h("div");
+    wrap.appendChild(list);
+    var rows = get(q.id, p.key);
+    if (!Array.isArray(rows)) rows = [];
+    var target = p.fixed || Math.max(p.min || 1, rows.length);
+    while (rows.length < target) rows.push({});
+
+    function commit() { set(q.id, p.key, rows); }
+    function draw() {
+      list.innerHTML = "";
+      rows.forEach(function (row, ri) {
+        var r = h("div", { class: "row" });
+        r.appendChild(h("div", { class: "rn", text: (ri + 1) + "つ目" }));
+        if (!p.fixed && rows.length > (p.min || 1)) {
+          r.appendChild(h("button", { type: "button", class: "del", text: "削除", onclick: function () {
+            rows.splice(ri, 1); commit(); draw();
+          }}));
+        }
+        var cols = h("div", { class: "cols" });
+        p.cols.forEach(function (c) {
+          var cell = h("div", { class: "c" + (c.full || p.cols.length === 1 ? " full" : "") });
+          cell.appendChild(h("label", { text: c.label }));
+          var onCh = function (v) { row[c.key] = v; commit(); };
+          if (c.k === "scale") cell.appendChild(scaleInput(row[c.key], onCh));
+          else if (c.k === "area") cell.appendChild(areaInput(row[c.key], c.ph, onCh));
+          else cell.appendChild(textInput(row[c.key], c.ph, onCh));
+          cols.appendChild(cell);
+        });
+        r.appendChild(cols);
+        list.appendChild(r);
+      });
+      addBtn.style.display = (!p.fixed && rows.length < (p.max || 99)) ? "" : "none";
+    }
+    var addBtn = h("button", { type: "button", class: "btn small addrow", text: p.addLabel || "＋ 追加", onclick: function () {
+      rows.push({}); draw();
+      var last = list.lastChild && list.lastChild.querySelector("input,textarea");
+      if (last) last.focus();
+    }});
+    wrap.appendChild(addBtn);
+    draw();
+    return wrap;
+  }
+
+  function renderRank(q, p) {
+    var ol = h("ol", { class: "rank" });
+    var order = get(q.id, p.key);
+    var touched = Array.isArray(order);
+    if (!touched) order = p.items.slice();
+    var hint = h("div", { class: "note", text: touched ? "" : "まだ並べ替えていません（初期の順番のままです）" });
+    function move(i, d) {
+      var j = i + d; if (j < 0 || j >= order.length) return;
+      var t = order[i]; order[i] = order[j]; order[j] = t;
+      touched = true; hint.textContent = "";
+      set(q.id, p.key, order.slice()); draw();
+      var btn = ol.children[j] && ol.children[j].querySelector(d < 0 ? ".up" : ".down");
+      if (btn && !btn.disabled) btn.focus();
+    }
+    function draw() {
+      ol.innerHTML = "";
+      order.forEach(function (it, i) {
+        ol.appendChild(h("li", null, [
+          h("span", { class: "n", text: String(i + 1) }),
+          h("span", { class: "nm", text: it }),
+          (function () { var b = h("button", { type: "button", class: "up", text: "↑", "aria-label": it + "を上へ", onclick: function () { move(i, -1); } }); b.disabled = i === 0; return b; })(),
+          (function () { var b = h("button", { type: "button", class: "down", text: "↓", "aria-label": it + "を下へ", onclick: function () { move(i, 1); } }); b.disabled = i === order.length - 1; return b; })()
+        ]));
+      });
+    }
+    draw();
+    var wrap = h("div", null, [ol, hint]);
+    return wrap;
+  }
+
+  function renderGrid(q, p) {
+    var vals = get(q.id, p.key) || {};
+    var tb = h("tbody");
+    p.items.forEach(function (it) {
+      tb.appendChild(h("tr", null, [
+        h("td", { text: it }),
+        h("td", null, [scaleInput(vals[it], function (v) {
+          if (v == null) delete vals[it]; else vals[it] = v;
+          set(q.id, p.key, Object.assign({}, vals));
+        })])
+      ]));
+    });
+    return h("table", { class: "grid" }, [tb]);
+  }
+
+  // ---------- 回答済み判定・進捗 ----------
+  function hasValue(v) {
+    if (v == null) return false;
+    if (typeof v === "string") return v.trim() !== "";
+    if (typeof v === "number") return true;
+    if (Array.isArray(v)) return v.some(hasValue);
+    if (typeof v === "object") { for (var k in v) if (hasValue(v[k])) return true; return false; }
+    return !!v;
+  }
+  function isAnswered(q) {
+    var a = S.answers[q.id];
+    if (!a) return false;
+    return q.parts.some(function (p) { return hasValue(a[p.key]); });
+  }
+  function markAnswered(qid) {
+    var el = document.getElementById(qid);
+    var q = Q.filter(function (x) { return x.id === qid; })[0];
+    if (el && q) el.classList.toggle("answered", isAnswered(q));
+  }
+  function updateProgress() {
+    var qs = Q.filter(function (q) { return q.no; });
+    var done = qs.filter(isAnswered).length;
+    document.getElementById("barFill").style.width = (done / qs.length * 100) + "%";
+    document.getElementById("pct").textContent = done + " / " + qs.length + " 問";
+  }
+
+  // ---------- 描画 ----------
+  var form = document.getElementById("form");
+  var nav = document.getElementById("secNav");
+  function build() {
+    form.innerHTML = ""; nav.innerHTML = "";
+    SECTIONS.forEach(function (s) {
+      var qs = Q.filter(function (q) { return q.sec === s.id; });
+      form.appendChild(h("h2", { class: "sec", id: "sec-" + s.id, text: s.title }));
+      nav.appendChild(h("a", { href: "#sec-" + s.id, text: s.id === "S0" ? "回答者" : s.id }));
+      qs.forEach(function (q) {
+        var card = h("section", { class: "q", id: q.id });
+        card.appendChild(h("h3", null, [
+          q.no ? h("span", { class: "no", text: q.no + "." }) : null,
+          h("span", { text: q.title }),
+          q.no ? h("span", { class: "done", text: "✓ 回答済み" }) : null
+        ]));
+        if (q.desc) card.appendChild(h("p", { class: "desc", text: q.desc }));
+        q.parts.forEach(function (p) { card.appendChild(renderPart(q, p)); });
+        form.appendChild(card);
+        markAnswered(q.id);
+      });
+    });
+    nav.appendChild(h("a", { href: "#finish", text: "提出" }));
+    updateProgress();
+    showSaved();
+  }
+  build();
+
+  // ---------- 書き出し ----------
+  var CIRC = "①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳";
+  function indent(s) { return String(s).trim().split("\n").map(function (l) { return "  " + l; }).join("\n"); }
+  function partText(q, p) {
+    var v = get(q.id, p.key);
+    var lbl = p.label ? "【" + p.label + "】" : "";
+    if (p.k === "rows") {
+      var rows = (v || []).filter(hasValue);
+      if (!rows.length) return lbl ? lbl + " （未回答）" : "（未回答）";
+      var lines = rows.map(function (r, i) {
+        var head = (CIRC[i] || (i + 1) + ".") + " ";
+        var segs = p.cols.map(function (c, ci) {
+          var val = r[c.key];
+          if (!hasValue(val)) return null;
+          if (c.k === "scale") val = val + "/5";
+          if (ci === 0 && p.cols.length > 1 && c.key === "what") return String(val).trim();
+          if (p.cols.length === 1) return String(val).trim();
+          return c.label.replace(/^[①-⑳]/, "").replace(/（1〜5）$/, "") + "：" + String(val).trim();
+        }).filter(Boolean);
+        return head + segs.join("｜");
+      });
+      return (lbl ? lbl + "\n" : "") + lines.join("\n");
+    }
+    if (p.k === "rank") {
+      if (!Array.isArray(v)) return "（未回答）";
+      var other = get(q.id, "other");
+      return v.map(function (x, i) {
+        return (i + 1) + ". " + x + (x === "その他" && hasValue(other) ? "（" + other.trim() + "）" : "");
+      }).join("\n");
+    }
+    if (p.k === "grid") {
+      v = v || {};
+      return p.items.map(function (it) { return "・" + it + "：" + (v[it] || "-"); }).join("\n");
+    }
+    if (q.id === "q28" && p.key === "other") return null; // ランキング内に表示済み
+    if (!hasValue(v)) return lbl ? lbl + " （未回答）" : "（未回答）";
+    var s;
+    if (p.k === "checks") s = v.join("、");
+    else if (p.k === "percent") s = v + "%";
+    else if (p.k === "scale") s = v + "/5" + (p.opts ? "（" + p.opts[v - 1] + "）" : "");
+    else s = String(v).trim();
+    if (s.indexOf("\n") >= 0) return (lbl ? lbl + "\n" : "") + indent(s);
+    return lbl ? lbl + " " + s : s;
+  }
+  function buildText() {
+    var name = (get("q0", "name") || "").trim() || "（名前未入力）";
+    var role = (get("q0", "role") || "").trim();
+    var out = [];
+    out.push("━━━━━━━━━━━━━━");
+    out.push("ポポコミュニティ スタッフヒアリング回答");
+    out.push("回答者：" + name + (role ? "（" + role + "）" : ""));
+    out.push("作成日：" + new Date().toLocaleDateString("ja-JP"));
+    var qs = Q.filter(function (q) { return q.no; });
+    out.push("回答済み：" + qs.filter(isAnswered).length + " / " + qs.length + " 問");
+    out.push("━━━━━━━━━━━━━━");
+    SECTIONS.forEach(function (s) {
+      if (s.id === "S0") return;
+      out.push("", "■ " + s.title);
+      Q.filter(function (q) { return q.sec === s.id; }).forEach(function (q) {
+        out.push("", "▼" + q.no + "．" + q.title);
+        q.parts.forEach(function (p) { var t = partText(q, p); if (t != null) out.push(t); });
+      });
+    });
+    return out.join("\n");
+  }
+  function fileBase() {
+    var name = (get("q0", "name") || "").trim().replace(/[\\/:*?"<>|\s]+/g, "_") || "回答";
+    var d = new Date();
+    var ymd = d.getFullYear() + String(d.getMonth() + 1).padStart(2, "0") + String(d.getDate()).padStart(2, "0");
+    return "ヒアリング回答_" + name + "_" + ymd;
+  }
+  function download(text, filename, type) {
+    var blob = new Blob([text], { type: type });
+    var url = URL.createObjectURL(blob);
+    var a = h("a", { href: url, download: filename });
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  }
+  var toastTimer;
+  function toast(msg) {
+    var t = document.getElementById("toast");
+    t.textContent = msg; t.classList.add("show");
+    clearTimeout(toastTimer); toastTimer = setTimeout(function () { t.classList.remove("show"); }, 2000);
+  }
+
+  var dlg = document.getElementById("dlg");
+  document.getElementById("btnExport").addEventListener("click", function () {
+    document.getElementById("dlgText").textContent = buildText();
+    if (dlg.showModal) dlg.showModal(); else dlg.setAttribute("open", "");
+  });
+  document.getElementById("dlgClose").addEventListener("click", function () { dlg.close ? dlg.close() : dlg.removeAttribute("open"); });
+  document.getElementById("dlgCopy").addEventListener("click", function () {
+    var text = buildText();
+    function fallback() {
+      var ta = h("textarea"); ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+      document.body.appendChild(ta); ta.select();
+      try { document.execCommand("copy"); toast("コピーしました"); } catch (e) { toast("コピーできませんでした。手動で選択してください"); }
+      ta.remove();
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function () { toast("コピーしました"); }, fallback);
+    } else fallback();
+  });
+  document.getElementById("dlgDl").addEventListener("click", function () {
+    download(buildText(), fileBase() + ".txt", "text/plain;charset=utf-8");
+  });
+  document.getElementById("btnJson").addEventListener("click", function () {
+    download(JSON.stringify({ app: "popo-staff-hearing", version: 1, answers: S.answers, updated: S.updated }, null, 2),
+      fileBase() + ".json", "application/json");
+  });
+  var fileIn = document.getElementById("fileIn");
+  document.getElementById("btnImport").addEventListener("click", function () { fileIn.click(); });
+  fileIn.addEventListener("change", function () {
+    var f = fileIn.files && fileIn.files[0]; if (!f) return;
+    var rd = new FileReader();
+    rd.onload = function () {
+      try {
+        var d = JSON.parse(rd.result);
+        if (!d || typeof d.answers !== "object") throw new Error("bad");
+        if (!confirm("現在の入力内容をバックアップの内容で上書きします。よろしいですか？")) return;
+        S.answers = d.answers; save(); build(); toast("復元しました");
+      } catch (e) { alert("このファイルは読み込めませんでした。"); }
+      fileIn.value = "";
+    };
+    rd.readAsText(f);
+  });
+  document.getElementById("btnPrint").addEventListener("click", function () { window.print(); });
+  document.getElementById("btnReset").addEventListener("click", function () {
+    if (!confirm("入力した回答をすべて消去します。元に戻せません。よろしいですか？")) return;
+    S = { answers: {}, updated: null };
+    try { localStorage.removeItem(STORE_KEY); } catch (e) {}
+    document.getElementById("savedAt").textContent = "";
+    build(); window.scrollTo(0, 0); toast("消去しました");
+  });
+})();
+</script>
+</body>
+</html>
