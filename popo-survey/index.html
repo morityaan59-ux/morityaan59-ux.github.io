@@ -103,6 +103,8 @@
   .rows .row .rn { font-size: 12px; color: var(--muted); font-weight: 700; margin-bottom: 2px; }
   .rows .row .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
   .rows .row .cols .c.full { grid-column: 1 / -1; }
+  .rows .row .cols.c3 { grid-template-columns: repeat(3, 1fr); }
+  .rows .row .cols.c3 input { padding: 8px 6px; }
   .rows .row .cols .c label { font-size: 12px; color: var(--muted); display: block; }
   .rows .del {
     position: absolute; top: 6px; right: 8px; border: 0; background: none; color: var(--muted);
@@ -164,7 +166,7 @@
   }
   .toast.show { opacity: 1; }
   @media (max-width: 560px) {
-    .rows .row .cols { grid-template-columns: 1fr; }
+    .rows .row .cols:not(.c3) { grid-template-columns: 1fr; }
     .grid td { display: block; border: 0; padding: 2px 0; text-align: left !important; }
     .grid tr { display: block; border-bottom: 1px solid var(--line); padding: 6px 0; }
     header.top .ttl { display: none; }
@@ -255,11 +257,11 @@
     { id: "q1", sec: "A", no: "1", title: "現在担当している仕事",
       desc: "現在ポポコミュニティで行っている仕事を、できるだけ具体的にすべて書いてください。\n正確に分からなければ概算でOKです。",
       parts: [
-        { k: "rows", key: "tasks", min: 1, max: 30, addLabel: "＋ 仕事を追加", cols: [
+        { k: "rows", key: "tasks", min: 1, max: 30, compact: true, addLabel: "＋ 仕事を追加", cols: [
           { key: "what", label: "①仕事内容", ph: "例：新規会員との電話面談", full: true },
-          { key: "freq", label: "②頻度", ph: "例：週3〜5件" },
-          { key: "per", label: "③1回あたり時間", ph: "例：30分程度" },
-          { key: "month", label: "④月合計時間", ph: "例：月8時間程度" }
+          { key: "freq", label: "②頻度", short: "頻度", ph: "週3〜5件" },
+          { key: "per", label: "③1回の時間", short: "1回", ph: "30分" },
+          { key: "month", label: "④月合計", short: "月計", ph: "月8時間" }
         ]}
       ]},
     { id: "q2", sec: "A", no: "2", title: "現在の総稼働時間",
@@ -646,7 +648,7 @@
             rows.splice(ri, 1); commit(); draw();
           }}));
         }
-        var cols = h("div", { class: "cols" });
+        var cols = h("div", { class: "cols" + (p.compact ? " c3" : "") });
         p.cols.forEach(function (c) {
           var cell = h("div", { class: "c" + (c.full || p.cols.length === 1 ? " full" : "") });
           cell.appendChild(h("label", { text: c.label }));
@@ -787,7 +789,7 @@
           if (c.k === "scale") val = val + "/5";
           if (ci === 0 && p.cols.length > 1 && c.key === "what") return String(val).trim();
           if (p.cols.length === 1) return String(val).trim();
-          return c.label.replace(/^[①-⑳]/, "").replace(/（1〜5）$/, "") + "：" + String(val).trim();
+          return (c.short || c.label.replace(/^[①-⑳]/, "").replace(/（1〜5）$/, "")) + "：" + String(val).trim();
         }).filter(Boolean);
         return head + segs.join("｜");
       });
@@ -811,7 +813,7 @@
     else if (p.k === "percent") s = v + "%";
     else if (p.k === "scale") s = v + "/5" + (p.opts ? "（" + p.opts[v - 1] + "）" : "");
     else s = String(v).trim();
-    if (s.indexOf("\n") >= 0) return (lbl ? lbl + "\n" : "") + indent(s);
+    if (s.indexOf("\n") >= 0) return lbl ? lbl + "\n" + indent(s) : s;
     return lbl ? lbl + " " + s : s;
   }
   function buildText() {
