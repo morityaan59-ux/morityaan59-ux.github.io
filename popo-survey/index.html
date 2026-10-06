@@ -923,7 +923,7 @@
       btnSend.hidden = true;
       btnExport.textContent = "回答をまとめる（LINEで送る）";
       btnExport.classList.add("primary");
-      desc.textContent = "「回答をまとめる」を押すと、全回答が1つのテキストになります。「コピー」を押してポポさんとのLINEに貼り付け、送信してください。長い場合は自動で数回に分かれます。";
+      desc.textContent = "「回答をまとめる」を押すと、全回答が1つのテキストになります。「コピー」を押してポポさんとの個別LINEに貼り付け、送信してください。長い場合は自動で数回に分かれます。入力内容はあなたのスマホ（ブラウザ）の中にだけ保存され、どこにも自動送信されないので、ポポさん以外の人に見られることはありません。";
     }
     if (S.submittedAt) setStatus("✓ " + new Date(S.submittedAt).toLocaleString("ja-JP") + " にポポさんへ送信済み", true);
     else setStatus("");
