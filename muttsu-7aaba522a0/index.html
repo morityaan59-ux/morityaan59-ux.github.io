@@ -1,0 +1,1069 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex,nofollow,noarchive">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>むっつ予想</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Roboto:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* くじ購入画面風: 白い画面・赤の強調・クリーム色の数字パネル・灰色の四角い数字ボタン。左にA〜Y・AA〜AYの申込枠（5枠ずつ表示）、右（スマホでは下）に数字パネル */
+  --bg:#F3F3F3; --surface:#FFFFFF; --ink:#222222; --muted:#6B6B6B; --line:#DDDDDD;
+  --red:#D7000F; --red-soft:#FDECEC; --cream:#FFF9E3; --tile:#E9E9E9; --self:#0A8FD8; --rand:#5B9E1A; --orange:#E66B00; --gold:#E8B21E;
+  --sheet:var(--red); --accent:var(--red); --accent-ink:#B0000C; --accent-soft:var(--red-soft); --good:#0A8FD8; --good-soft:#E3F2FB; --pencil:#333;
+  --font-display:"Noto Sans JP",system-ui,sans-serif;
+  --font-body:"Noto Sans JP",system-ui,-apple-system,"Hiragino Sans",sans-serif;
+  --font-num:"Roboto","Noto Sans JP",system-ui,sans-serif;
+  --r:6px;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:15px;line-height:1.6;-webkit-tap-highlight-color:transparent}
+button,input,select{font:inherit;color:inherit}
+.app{max-width:520px;margin:0 auto;min-height:100%;display:flex;flex-direction:column;padding:0 16px calc(118px + env(safe-area-inset-bottom))}
+header{padding:calc(14px + env(safe-area-inset-top)) 0 8px;display:flex;align-items:flex-end;justify-content:space-between;gap:12px}
+h1{font-family:var(--font-display);font-weight:600;font-size:26px;margin:0;letter-spacing:.01em;line-height:1.2}
+h1 small{display:block;font-family:var(--font-body);font-size:11px;font-weight:500;color:var(--muted);letter-spacing:.04em}
+h2{font-family:var(--font-display);font-weight:600;font-size:20px;margin:0;text-wrap:balance}
+h3{font-size:13px;font-weight:700;color:var(--muted);margin:0;letter-spacing:.04em}
+.pts{background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:4px 12px;font-variant-numeric:tabular-nums;font-weight:700;white-space:nowrap}
+.pts span{font-size:11px;color:var(--muted);font-weight:500;margin-left:2px}
+.next{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:13px;color:var(--muted);padding:6px 0 12px;border-bottom:1px solid var(--line);margin-bottom:16px}
+.next b{color:var(--ink);font-weight:700}
+.view{display:none;flex-direction:column;gap:16px}
+.view.on{display:flex}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px;display:flex;flex-direction:column;gap:12px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.spread{justify-content:space-between}
+.muted{color:var(--muted);font-size:13px}
+.grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.ball{aspect-ratio:1;border-radius:50%;border:1.5px solid var(--line);background:var(--surface);display:grid;place-items:center;font-weight:500;font-variant-numeric:tabular-nums;font-size:15px;cursor:pointer;transition:transform .08s,background .12s;padding:0;min-width:0}
+.ball:active{transform:scale(.92)}
+.ball.on{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700}
+.ball:disabled{opacity:.35;cursor:default}
+.picked{display:flex;gap:6px;min-height:40px;align-items:center}
+.mini{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-variant-numeric:tabular-nums;font-size:14px;border:1.5px dashed var(--line);color:var(--muted);flex:none}
+.mini.f{border:1.5px solid var(--accent);background:var(--accent-soft);color:var(--accent-ink)}
+.mini.hit{background:var(--accent);border-color:var(--accent);color:#fff;border-style:solid}
+.mini.bon{border:1.5px solid var(--good);color:var(--good);border-style:solid;background:var(--good-soft)}
+.mini.plain{border:1.5px solid var(--line);color:var(--ink);border-style:solid}
+.mini.sm{width:30px;height:30px;font-size:12.5px}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:10px 14px;font-weight:500;cursor:pointer;min-height:44px}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700}
+.btn.primary:disabled{opacity:.45;cursor:default}
+.btn.ghost{background:transparent}
+.btn.wide{flex:1}
+.btn.small{min-height:34px;padding:4px 10px;font-size:13px}
+.btn:focus-visible,.ball:focus-visible,.tab:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--accent-ink);outline-offset:2px}
+.ticket{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line)}
+.ticket:first-child{border-top:0}
+.ticket .nums{display:flex;gap:4px;flex-wrap:wrap;flex:1}
+.pill{font-size:12px;font-weight:700;padding:2px 9px;border-radius:999px;white-space:nowrap;background:var(--bg);color:var(--muted);border:1px solid var(--line)}
+.pill.win{background:var(--accent);color:#fff;border-color:var(--accent)}
+.pill.wait{background:var(--good-soft);color:var(--good);border-color:transparent}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+th,td{padding:8px 4px;text-align:right;border-bottom:1px solid var(--line);font-size:14px}
+th:first-child,td:first-child{text-align:left}
+th{font-size:12px;color:var(--muted);font-weight:500}
+td.em{font-weight:700}
+.tag{font-size:11px;color:var(--muted)}
+.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.tile{background:var(--bg);border-radius:10px;padding:10px;display:flex;flex-direction:column}
+.tile b{font-family:var(--font-display);font-size:22px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.2}
+.tile span{font-size:11.5px;color:var(--muted)}
+label{font-size:13px;color:var(--muted);display:flex;flex-direction:column;gap:4px}
+select,input[type=number],input[type=date],input[type=text]{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:9px 10px;min-height:44px;width:100%}
+.check{flex-direction:row;align-items:center;gap:8px;color:var(--ink);font-size:14px;min-height:36px}
+.check input{width:20px;height:20px;accent-color:var(--accent)}
+.note{font-size:12.5px;color:var(--muted);background:var(--bg);border-radius:10px;padding:10px 12px;line-height:1.6}
+.latest{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.latest .plus{color:var(--muted);font-size:13px;margin:0 2px}
+.drawrow{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--line);font-size:13px}
+.drawrow .meta{width:86px;flex:none;font-variant-numeric:tabular-nums}
+.drawrow .meta b{display:block;font-size:14px}
+.drawrow .nums{display:flex;gap:4px;flex-wrap:wrap}
+.inputs7{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.inputs7 input{padding:8px 2px;text-align:center}
+.tabs{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--line);padding:0 0 env(safe-area-inset-bottom);z-index:5}
+.tabs .disc{text-align:center;font-size:10.5px;color:var(--muted);padding:4px 8px 0}
+.tabs nav{max-width:520px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr)}
+.tab{background:none;border:0;padding:6px 0 10px;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11.5px;color:var(--muted);cursor:pointer;min-height:54px}
+.tab svg{width:22px;height:22px}
+.tab.on{color:var(--accent-ink);font-weight:700}
+.toast{position:fixed;left:50%;bottom:calc(120px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(10px);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-size:14px;opacity:0;transition:opacity .2s,transform .2s;pointer-events:none;z-index:9;max-width:90vw;text-align:center}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.empty{color:var(--muted);font-size:13.5px;text-align:center;padding:12px 0}
+.bar{height:6px;border-radius:3px;background:var(--bg);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent)}
+.hint-ok{color:var(--good);font-weight:700}
+
+/* ---- 購入画面風 ---- */
+header{background:var(--surface);margin:0 -16px;padding:calc(12px + env(safe-area-inset-top)) 16px 10px;align-items:center;border-bottom:3px solid var(--red)}
+h1{font-weight:700;font-size:22px;letter-spacing:.02em}
+h1 small{color:var(--red);font-weight:700}
+h2{font-family:var(--font-body);font-weight:700;font-size:18px}
+.pts{font-family:var(--font-num)}
+.next{padding:10px 0;margin-bottom:12px}
+.next b{font-family:var(--font-num)}
+.card{border-radius:var(--r)}
+.buyhead{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;padding-bottom:10px;border-bottom:1px solid var(--line)}
+.buyhead h2{font-size:19px}
+.buyhead .d{font-size:13.5px;color:var(--ink)}
+.lead{font-size:13.5px;margin:0}
+.lines{display:flex;flex-direction:column;gap:8px}
+.line{display:flex;align-items:stretch;border:1px solid #CFCFCF;border-radius:5px;background:var(--surface);cursor:pointer;min-height:52px;overflow:hidden;padding:0}
+.line .lab{width:28px;flex:none;display:grid;place-items:center;background:#D5D5D5;color:#333;font-weight:700;font-size:14px}
+.line .body{flex:1;display:flex;flex-direction:column;justify-content:center;gap:2px;padding:6px 8px}
+.line .dots{display:flex;gap:5px}
+.line .dot{width:30px;height:30px;border-radius:50%;background:#CDCDCD;display:grid;place-items:center;color:#fff;font-weight:700;font-family:var(--font-num);font-size:14px}
+.line .dot.self{background:var(--self)}
+.line .dot.rand{background:var(--rand)}
+.line .x{width:30px;flex:none;display:grid;place-items:center;background:#D5D5D5;color:#fff;font-size:20px;border:0;cursor:pointer}
+.line.on{border-color:var(--red);background:var(--cream)}
+.line.on .lab{background:var(--red);color:#fff}
+.line.on .x{background:#BDBDBD}
+.line .sub{font-size:11px;color:var(--muted)}
+.line .sub b{background:#E4E4E4;padding:0 6px;border-radius:2px;color:var(--ink);font-weight:700;margin-left:2px}
+.panel{background:var(--cream);border:1px solid var(--red);border-radius:6px;padding:12px;display:flex;flex-direction:column;gap:10px}
+.pnav{display:flex;justify-content:center;align-items:center;gap:14px;font-weight:700}
+.pnav button{width:28px;height:28px;border-radius:50%;border:0;background:var(--red);color:#fff;font-weight:700;cursor:pointer;display:grid;place-items:center;padding:0}
+.pnav button:disabled{background:#CFCFCF;cursor:default}
+.grid{grid-template-columns:repeat(7,1fr);gap:5px}
+.ball{aspect-ratio:1/0.92;border-radius:3px;border:1px solid #D3D3D3;background:var(--tile);color:#222;font-family:var(--font-num);font-weight:700;font-size:16px;height:auto}
+.ball.on{background:var(--self);border-color:var(--self);color:#fff;background-image:none}
+.ball.on.rand{background:var(--rand);border-color:var(--rand)}
+.ball:disabled{opacity:.45}
+.remain{text-align:right;font-weight:700;font-size:14px}
+.remain b{font-size:18px}
+.legend{display:flex;gap:12px;font-size:12.5px;align-items:center}
+.legend i{display:inline-block;width:14px;height:14px;border-radius:2px;margin-right:4px;vertical-align:-2px}
+.pbtns{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.btn{border-radius:4px}
+.btn.green{background:var(--rand);border-color:var(--rand);color:#fff;font-weight:700}
+.btn.orange{background:var(--orange);border-color:var(--orange);color:#fff;font-weight:700}
+.btn.gray{background:linear-gradient(#EFEFEF,#D9D9D9);border-color:#C9C9C9;font-weight:700}
+.btn.primary{background:var(--red);border-color:var(--red)}
+.btn.primary:disabled{background:#CFCFCF;border-color:#CFCFCF;opacity:1}
+.total{display:flex;justify-content:flex-end;align-items:baseline;gap:10px;font-size:13.5px;font-weight:700;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:10px}
+.total .sum{color:var(--red);font-size:26px;font-family:var(--font-num)}
+.total .sum small{font-size:14px}
+.mini{font-family:var(--font-num)}
+.mini.hit,.latest .mini{border:0;color:#fff;background:var(--red)}
+.mini.bon{border:0;color:#fff;background:var(--orange)}
+.latest .mini{width:40px;height:40px;font-size:16px}
+.latest .plus{font-weight:700;color:var(--orange)}
+.mini.plain{border:0;background:#E4E4E4;color:var(--ink)}
+.ticket{gap:10px}
+.ticket .mini.sm{width:28px;height:28px}
+.pill.win{background:var(--red);border-color:var(--red)}
+.tile b{font-family:var(--font-num);font-weight:700}
+th{background:#F0F0F0;color:#444;font-weight:700}
+.tabs{border-top:1px solid var(--line)}
+.tab.on{color:var(--red)}
+.note{border-left:3px solid var(--red);border-radius:2px}
+.tierrules td{font-size:13px}
+.admin{border:1px solid var(--red)}
+.pager{display:flex;align-items:center;justify-content:center;gap:8px;font-size:13px;font-weight:700;flex-wrap:wrap;padding-top:2px}
+.pgb{width:30px;height:30px;border-radius:50%;border:0;background:#C9C9C9;color:#fff;font-weight:700;cursor:pointer;padding:0}
+.pgb:not(:disabled){background:#9A9A9A}
+.pgb:disabled{opacity:.5;cursor:default}
+.aline{display:flex;align-items:center;gap:8px;padding:8px 0;border-top:1px solid var(--line)}
+.aline:first-child{border-top:0}
+.aline .lab{width:24px;height:24px;flex:none;display:grid;place-items:center;background:var(--red);color:#fff;font-weight:700;border-radius:3px;font-size:13px}
+.aline .info{flex:1;display:flex;flex-direction:column;gap:3px;min-width:0}
+.aline .rule{font-size:11.5px;color:var(--muted);line-height:1.4}
+.aline .nums{display:flex;gap:4px;flex-wrap:wrap}
+.tierrules td:nth-child(2),.tierrules th:nth-child(2){text-align:left}
+.gsw{display:flex;margin:8px 0 0;border-bottom:2px solid var(--red)}
+.gbtn{flex:1;appearance:none;border:1px solid var(--line,#ddd);border-bottom:0;background:#fff;color:var(--red);font-weight:700;font-size:15px;padding:9px 0;cursor:pointer;border-radius:8px 8px 0 0}
+.gbtn.on{background:var(--red);color:#fff;border-color:var(--red)}
+.ainfo{display:flex;flex-direction:column;gap:6px;margin:8px 0}
+.arow{display:flex;flex-direction:column;gap:4px;align-items:stretch}
+.alab{font-size:12px;color:var(--muted);font-weight:700}
+.arow .nums{display:flex;gap:4px;flex-wrap:wrap}
+.line .dots.seven{gap:3px}
+.line .dots.seven .dot{width:26px;height:26px;font-size:12.5px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1><small>ロト6・ロト7シミュレーション</small>むっつ予想</h1>
+    <div class="pts" id="pts" aria-live="polite">0<span>pt</span></div>
+  </header>
+  <div class="gsw" role="tablist" aria-label="くじの種類">
+    <button class="gbtn on" role="tab" data-g="6">ロト6</button>
+    <button class="gbtn" role="tab" data-g="7">ロト7</button>
+  </div>
+  <div class="next" id="nextLine">読み込み中…</div>
+
+  <!-- 予想する -->
+  <section class="view on" id="v-pick" aria-label="予想する">
+    <div class="card">
+      <div class="buyhead"><h2 id="pickTitle">ロト6</h2><span class="d" id="pickDate"></span></div>
+      <p class="lead" id="pickLead"></p>
+      <div class="lines" id="lines"></div>
+      <div class="panel">
+        <div class="pnav"><button id="prevLine" aria-label="前の枠">‹</button><span id="curLab">A</span><button id="nextLineBtn" aria-label="次の枠">›</button></div>
+        <div class="grid" id="grid"></div>
+        <div class="remain" id="pickCount"></div>
+        <div class="row spread"><div class="legend"><span><i style="background:var(--self)"></i>自分で選択</span><span><i style="background:var(--rand)"></i>ランダム選択</span></div><button class="btn gray small" id="btnClear">リセット</button></div>
+        <div class="pbtns"><button class="btn green" id="btnRand">ランダム選択</button><button class="btn orange" id="btnQuick">クイックピック</button></div>
+        <p class="muted" style="margin:0;font-size:12px" id="randNote"></p>
+      </div>
+      <div class="total"><span id="costLabel"></span><span>登録口数 <span id="lineCount">0</span>口</span><span>合計 <span class="sum" id="sumPt">0<small>pt</small></span></span></div>
+      <button class="btn primary" id="btnBuy" disabled>予想を登録する</button>
+    </div>
+    <div class="card admin">
+      <div class="row spread"><h2 id="adminTitle">管理人の予想</h2><span class="tag" id="adminSrc"></span></div>
+      <p class="muted" style="margin:0" id="adminLead"></p>
+      <div class="row" style="flex-wrap:nowrap">
+        <label for="adminFmt" style="flex:1">買い方の型
+          <select id="adminFmt"></select></label>
+        <label for="adminCount" style="width:96px">口数
+          <select id="adminCount"><option>5</option><option>10</option><option>20</option><option>30</option><option>50</option></select></label>
+      </div>
+      <div id="adminInfo" class="ainfo"></div>
+      <div id="adminLines"></div>
+      <button class="btn primary" id="btnAdmin">この予想を枠に入れる</button>
+      <div id="adminRecord" class="note"></div>
+    </div>
+    <div class="card">
+      <div class="row spread"><h3>登録した予想</h3><span class="muted" id="openInfo"></span></div>
+      <div id="openList"></div>
+    </div>
+    <p class="note" id="pickNote"></p>
+  </section>
+
+  <!-- 過去で試す -->
+  <section class="view" id="v-test" aria-label="過去で試す">
+    <div class="card">
+      <h2 id="testTitle">選び方を過去の回で試す</h2>
+      <label for="strat">選び方
+        <select id="strat">
+          <option value="random">毎回おまかせ（ランダム）</option>
+          <option value="birthday">誕生日の数字だけ（1〜31）</option>
+          <option value="avoidPrev">前回の数字を外す</option>
+          <option value="pullPrev1">前回の数字を1個入れる</option>
+          <option value="pullPrev2">前回の数字を2個入れる</option>
+          <option value="hot">直近24回でよく出た数字から</option>
+          <option value="cold">直近24回であまり出ていない数字から</option>
+          <option value="fixed">いつも同じ数字</option>
+          <option value="admin">管理人の予想（いま選んでいる型）</option>
+        </select>
+      </label>
+      <div id="fixedBox" style="display:none" class="row">
+        <label for="fixedNums" style="flex:1" id="fixedLabel">いつも使う数字（カンマ区切り）
+          <input type="text" id="fixedNums" inputmode="numeric">
+        </label>
+      </div>
+      <div id="condBox">
+        <h3 style="margin-bottom:4px">追加の条件</h3>
+        <label class="check"><input type="checkbox" id="cConsec">連続する数字は1組まで</label>
+        <label class="check"><input type="checkbox" id="cDigit">下1桁が同じペアを1組以上入れる</label>
+        <label class="check"><input type="checkbox" id="cOdd"><span id="oddLabel">奇数と偶数を半分ずつにする</span></label>
+      </div>
+      <div class="row" style="flex-wrap:nowrap">
+        <label for="range" style="flex:1">試す範囲
+          <select id="range">
+            <option value="all">全部の回</option>
+            <option value="500">直近500回</option>
+            <option value="100">直近100回</option>
+          </select>
+        </label>
+        <label for="perRound" style="width:96px">1回あたり
+          <select id="perRound"><option>1</option><option>2</option><option>3</option><option>5</option><option>10</option><option>20</option><option>50</option></select>
+        </label>
+        <label for="seed" style="width:96px">乱数の種
+          <input type="number" id="seed" inputmode="numeric">
+        </label>
+      </div>
+      <button class="btn primary" id="btnRun">この選び方で試す</button>
+    </div>
+    <div class="card" id="testOut"><p class="empty">選び方を決めて「この選び方で試す」を押すと、何等が何回出たかがここに出ます。</p></div>
+  </section>
+
+  <!-- 成績 -->
+  <section class="view" id="v-stats" aria-label="成績">
+    <div class="card">
+      <h2 id="statsTitle">あなたの成績</h2>
+      <div class="tiles" id="tiles"></div>
+      <table id="tierTable"></table>
+      <div class="row spread"><span class="muted" id="syncNote"></span><button class="btn small" id="btnRefill">ポイントを補充</button></div>
+    </div>
+    <div class="card">
+      <h3>答え合わせ済みの予想</h3>
+      <div id="doneList"></div>
+    </div>
+    <div class="card">
+      <h3>過去で試した記録</h3>
+      <div id="btHist"></div>
+    </div>
+  </section>
+
+  <!-- 結果 -->
+  <section class="view" id="v-res" aria-label="結果">
+    <div class="card">
+      <div class="row spread"><h2 id="latestTitle">最新の当せん番号</h2><span class="tag" id="latestSrc"></span></div>
+      <div class="latest" id="latestNums"></div>
+      <div class="muted" id="latestDate"></div>
+    </div>
+    <div class="card">
+      <h3>等級と当せん条件</h3>
+      <table class="tierrules" id="tierRules"></table>
+    </div>
+    <div class="card" id="manualCard">
+      <h3>結果を手で入れる</h3>
+      <p class="muted" style="margin:0" id="manualHint">自動で取り込めなかった回は、ここで入れられます。</p>
+      <div class="row" style="flex-wrap:nowrap">
+        <label for="mRound" style="width:110px">回
+          <input type="number" id="mRound" inputmode="numeric">
+        </label>
+        <label for="mDate" style="flex:1">抽せん日
+          <input type="date" id="mDate">
+        </label>
+      </div>
+      <div>
+        <div class="muted" style="margin-bottom:4px" id="mLabel"></div>
+        <div class="inputs7" id="mNums"></div>
+      </div>
+      <button class="btn primary" id="btnManual">この結果を保存</button>
+    </div>
+    <div class="card">
+      <div class="row spread"><h3>過去の当せん番号</h3>
+        <label for="findRound" class="row" style="flex-direction:row;gap:6px;align-items:center">回で探す<input type="number" id="findRound" inputmode="numeric" style="width:90px;min-height:36px;padding:4px 8px"></label>
+      </div>
+      <div id="drawList"></div>
+      <button class="btn small" id="btnMore">もっと見る</button>
+    </div>
+    <p class="note" id="resNote"></p>
+  </section>
+</div>
+
+<div class="tabs">
+  <div class="disc">ゲームです。本物のくじとは関係ありません</div>
+  <nav>
+    <button class="tab on" data-v="pick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="8" cy="8" r="3.2"/><circle cx="16" cy="8" r="3.2"/><circle cx="8" cy="16" r="3.2"/><circle cx="16" cy="16" r="3.2" fill="currentColor"/></svg>予想する</button>
+    <button class="tab" data-v="test"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19V5M4 19h16"/><path d="M8 15l3-4 3 2 5-6"/></svg>過去で試す</button>
+    <button class="tab" data-v="stats"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="11" width="3.5" height="8" rx="1"/><rect x="10.25" y="6" width="3.5" height="13" rx="1"/><rect x="16.5" y="13" width="3.5" height="6" rx="1"/></svg>成績</button>
+    <button class="tab" data-v="res"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></svg>結果</button>
+  </nav>
+</div>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+"use strict";
+/* ---------- くじの設定 ---------- */
+const START_PTS = 100000;
+const MAX_PER_ROUND = 50, SLOTS = 50, PAGE = 5;
+function C(n,k){ let r=1; for(let i=0;i<k;i++) r=r*(n-i)/(i+1); return Math.round(r); }
+const GAMES = {
+  "6": { id:"6", name:"ロト6", max:43, pick:6, nb:1, cost:200, days:[1,4], dayTxt:"月曜と木曜", col:"draws", raw:"1,20001005,2,8,10,13,27,30,39;2,20001012,1,9,16,20,21,43,5;3,20001019,1,5,15,31,36,38,13;4,20001026,16,18,26,27,34,40,13;5,20001102,9,15,21,23,27,28,43;6,20001109,6,12,23,25,28,38,22;7,20001116,7,19,21,23,33,35,26;8,20001123,11,16,18,20,42,43,28;9,20001130,11,19,23,38,39,42,15;10,20001207,1,3,19,21,35,39,26;11,20001214,12,26,32,37,40,42,16;12,20001221,14,17,27,28,35,39,22;13,20001228,13,29,31,37,41,42,17;14,20010104,2,8,11,35,37,38,43;15,20010111,4,6,11,20,21,28,36;16,20010118,5,12,13,29,34,35,30;17,20010125,14,20,25,34,35,36,11;18,20010201,6,16,18,27,36,41,33;19,20010208,4,8,12,30,33,43,14;20,20010215,7,29,33,35,37,39,19;21,20010222,5,7,13,19,38,41,42;22,20010301,8,12,16,19,20,35,41;23,20010308,7,10,28,32,33,40,13;24,20010315,15,18,19,30,36,38,13;25,20010322,11,32,34,37,40,43,8;26,20010329,3,4,11,12,13,43,22;27,20010405,4,8,20,30,33,38,10;28,20010412,6,11,15,20,31,41,7;29,20010419,8,12,20,35,37,40,33;30,20010426,4,16,17,19,26,37,8;31,20010503,7,18,22,25,28,43,4;32,20010510,3,6,7,23,29,41,33;33,20010517,8,17,22,25,29,41,13;34,20010524,2,20,25,30,37,40,10;35,20010531,3,5,13,30,32,41,28;36,20010607,1,16,20,23,30,40,17;37,20010614,3,5,9,17,21,41,26;38,20010621,2,9,26,27,34,43,42;39,20010628,10,18,22,25,39,42,17;40,20010705,5,17,25,34,38,39,2;41,20010712,18,21,27,33,36,38,23;42,20010719,4,15,21,24,33,37,9;43,20010726,1,2,3,15,24,26,27;44,20010802,3,16,24,31,34,42,36;45,20010809,7,9,28,32,36,38,8;46,20010816,11,14,21,24,25,42,41;47,20010823,3,11,14,25,27,31,22;48,20010830,2,5,28,30,33,40,26;49,20010906,2,13,21,31,32,41,35;50,20010913,5,13,15,25,27,39,40;51,20010920,7,15,24,37,38,41,34;52,20010927,1,16,24,25,36,42,21;53,20011004,2,15,23,37,40,43,25;54,20011011,14,25,26,31,37,42,7;55,20011018,11,12,13,14,37,39,28;56,20011025,10,13,25,31,32,42,40;57,20011101,2,14,22,27,35,42,34;58,20011108,4,8,9,13,16,25,28;59,20011115,9,15,17,30,32,41,31;60,20011122,20,21,23,28,30,42,29;61,20011129,4,8,22,25,27,28,6;62,20011206,2,3,9,12,15,30,42;63,20011213,11,16,20,28,34,40,22;64,20011220,2,14,19,22,32,41,9;65,20011227,2,10,22,23,31,43,28;66,20020110,7,15,17,30,33,35,14;67,20020117,1,4,6,11,18,25,3;68,20020124,16,23,30,35,37,39,38;69,20020131,1,9,31,35,40,41,14;70,20020207,6,11,20,23,24,31,17;71,20020214,1,10,11,13,19,20,3;72,20020221,10,12,24,29,33,37,34;73,20020228,1,6,15,19,27,36,25;74,20020307,3,14,27,28,40,43,39;75,20020314,2,4,9,19,23,31,18;76,20020321,1,10,12,16,20,35,29;77,20020328,5,10,15,28,37,38,13;78,20020404,5,14,23,32,33,43,37;79,20020411,20,22,27,32,36,43,23;80,20020418,1,4,12,16,19,34,18;81,20020425,1,11,15,23,26,27,41;82,20020502,10,12,19,25,26,39,28;83,20020509,1,16,21,28,35,37,30;84,20020516,17,19,26,28,35,37,40;85,20020523,5,13,18,22,23,32,28;86,20020530,3,7,16,24,29,36,26;87,20020606,3,8,12,36,39,41,10;88,20020613,5,6,8,20,21,26,30;89,20020620,3,13,23,30,35,43,21;90,20020627,13,15,17,18,30,32,9;91,20020704,13,15,17,26,41,43,6;92,20020711,5,17,20,24,28,40,16;93,20020718,10,23,33,36,37,41,28;94,20020725,11,16,17,18,29,40,9;95,20020801,2,3,12,15,25,27,33;96,20020808,1,13,15,34,36,43,37;97,20020815,4,10,17,34,35,42,43;98,20020822,7,16,34,37,38,39,8;99,20020829,5,9,12,28,29,39,27;100,20020905,6,8,11,14,31,33,23;101,20020912,21,27,29,30,36,40,23;102,20020919,4,5,18,27,35,36,41;103,20020926,1,16,17,27,29,34,39;104,20021003,1,11,17,26,28,35,12;105,20021010,1,9,14,22,25,34,18;106,20021017,8,11,21,22,25,27,26;107,20021024,4,5,11,12,28,32,37;108,20021031,9,22,23,25,34,37,8;109,20021107,2,5,12,18,30,41,24;110,20021114,5,6,8,19,37,41,9;111,20021121,11,15,21,31,32,43,24;112,20021128,16,18,23,25,29,30,41;113,20021205,3,17,27,29,30,42,6;114,20021212,7,13,14,29,38,42,9;115,20021219,8,9,11,27,37,39,18;116,20021226,8,10,15,16,26,31,42;117,20030109,5,7,19,20,38,43,4;118,20030116,9,13,21,30,32,37,20;119,20030123,3,4,11,12,15,30,17;120,20030130,15,18,22,25,36,40,14;121,20030206,3,8,10,22,28,41,35;122,20030213,19,20,21,25,33,42,41;123,20030220,14,21,26,28,29,31,8;124,20030227,4,17,23,30,39,40,28;125,20030306,11,15,19,30,36,41,10;126,20030313,5,6,9,10,21,38,20;127,20030320,14,16,21,26,37,40,3;128,20030327,6,10,18,20,29,39,21;129,20030403,6,18,25,26,30,42,24;130,20030410,22,30,31,34,38,39,2;131,20030417,6,30,33,34,40,43,1;132,20030424,3,18,23,31,32,37,1;133,20030501,17,24,26,35,40,41,16;134,20030508,2,6,11,14,18,19,21;135,20030515,7,13,30,33,35,36,11;136,20030522,3,13,26,31,32,39,1;137,20030529,10,13,20,22,25,42,14;138,20030605,7,9,10,16,23,29,18;139,20030612,10,21,22,28,37,41,12;140,20030619,17,19,29,37,39,40,10;141,20030626,8,9,14,24,32,39,30;142,20030703,2,16,22,27,29,39,38;143,20030710,17,21,22,27,33,41,43;144,20030717,1,16,19,33,38,41,43;145,20030724,1,4,10,21,23,38,7;146,20030731,7,17,27,36,37,39,4;147,20030807,16,18,20,29,30,38,27;148,20030814,3,16,18,20,28,29,9;149,20030821,8,9,13,20,33,37,19;150,20030828,10,11,18,20,31,43,27;151,20030904,3,8,17,25,28,32,27;152,20030911,4,8,12,16,31,33,17;153,20030918,4,7,8,12,25,26,41;154,20030925,7,9,18,26,27,38,14;155,20031002,5,6,7,18,22,27,41;156,20031009,6,20,22,29,30,35,39;157,20031016,5,8,17,19,25,27,21;158,20031023,1,6,12,35,37,38,30;159,20031030,12,23,30,31,38,42,6;160,20031106,4,10,20,30,31,32,26;161,20031113,23,26,28,33,38,42,8;162,20031120,3,22,25,30,33,37,35;163,20031127,2,3,11,17,24,34,28;164,20031204,1,2,13,14,35,38,32;165,20031211,9,11,16,21,25,36,10;166,20031218,14,18,20,28,34,38,17;167,20031225,10,14,17,19,29,42,2;168,20040108,1,6,31,32,36,39,42;169,20040115,3,15,17,19,26,36,39;170,20040122,10,12,15,17,30,31,6;171,20040129,5,6,17,23,32,33,39;172,20040205,10,11,22,23,33,34,27;173,20040212,6,10,22,30,31,35,18;174,20040219,2,9,16,36,38,42,6;175,20040226,2,3,10,22,28,40,43;176,20040304,8,19,25,31,34,37,30;177,20040311,6,18,19,30,36,41,27;178,20040318,10,22,27,30,36,39,4;179,20040325,3,6,11,13,15,16,23;180,20040401,4,10,11,12,20,36,28;181,20040408,1,2,7,21,29,30,23;182,20040415,22,23,28,37,40,43,30;183,20040422,14,29,31,36,38,40,33;184,20040429,5,7,23,31,39,42,19;185,20040506,8,13,14,18,35,41,33;186,20040513,7,16,18,33,36,41,4;187,20040520,12,21,22,27,39,40,25;188,20040527,3,8,18,25,26,39,38;189,20040603,3,32,35,36,39,40,5;190,20040610,17,23,30,31,39,43,42;191,20040617,4,7,25,27,34,43,35;192,20040624,3,7,19,27,39,41,10;193,20040701,3,4,18,31,40,43,22;194,20040708,4,11,12,21,36,38,37;195,20040715,5,10,12,22,26,41,19;196,20040722,4,5,11,16,30,33,14;197,20040729,9,10,17,22,28,30,19;198,20040805,4,5,6,17,20,42,10;199,20040812,3,14,24,25,33,36,41;200,20040819,4,7,11,19,25,28,2;201,20040826,10,13,16,17,24,39,43;202,20040902,9,18,26,28,33,40,10;203,20040909,12,18,20,27,35,37,39;204,20040916,2,17,20,25,39,42,30;205,20040923,4,7,9,16,18,34,26;206,20040930,1,3,16,22,41,43,13;207,20041007,17,21,23,30,31,34,5;208,20041014,18,24,29,32,35,39,23;209,20041021,8,27,30,35,40,41,9;210,20041028,1,6,21,22,37,40,19;211,20041104,10,14,23,26,33,36,24;212,20041111,1,11,17,32,35,39,20;213,20041118,4,7,18,26,29,43,8;214,20041125,4,7,9,11,20,36,32;215,20041202,1,4,13,18,22,31,30;216,20041209,9,21,29,33,35,41,27;217,20041216,8,19,23,27,29,39,28;218,20041223,8,10,18,22,31,36,4;219,20041230,27,28,29,34,35,39,33;220,20050106,23,25,26,29,33,37,40;221,20050113,8,27,30,31,38,42,13;222,20050120,4,14,15,22,29,31,20;223,20050127,7,9,19,26,30,32,3;224,20050203,12,17,18,19,30,35,13;225,20050210,9,11,21,31,35,38,13;226,20050217,8,26,36,40,42,43,21;227,20050224,6,13,17,29,32,36,35;228,20050303,5,8,17,26,36,39,34;229,20050310,8,16,21,24,27,36,20;230,20050317,4,9,18,31,36,42,34;231,20050324,1,4,6,16,18,43,41;232,20050331,1,5,7,26,39,43,32;233,20050407,6,18,26,40,41,42,9;234,20050414,11,17,24,26,27,30,19;235,20050421,6,21,23,24,28,39,38;236,20050428,1,8,9,14,34,38,4;237,20050505,1,3,11,13,27,37,30;238,20050512,5,10,15,20,33,37,30;239,20050519,4,9,18,30,31,40,24;240,20050526,11,15,26,31,36,39,12;241,20050602,8,14,27,33,36,40,20;242,20050609,1,10,13,22,29,32,38;243,20050616,5,34,35,38,42,43,8;244,20050623,11,12,30,36,38,39,37;245,20050630,3,6,18,24,28,36,21;246,20050707,16,28,32,34,39,42,38;247,20050714,8,16,30,32,34,39,13;248,20050721,11,32,35,36,39,41,6;249,20050728,1,3,17,23,33,35,18;250,20050804,3,8,9,13,22,42,11;251,20050811,2,12,19,25,29,36,26;252,20050818,2,6,13,22,32,33,12;253,20050825,15,16,19,22,36,43,13;254,20050901,12,13,22,23,25,29,40;255,20050908,6,7,12,17,34,42,8;256,20050915,15,17,18,28,30,37,40;257,20050922,7,15,29,30,39,40,11;258,20050929,3,15,16,17,25,31,40;259,20051006,1,12,15,23,34,42,27;260,20051013,11,15,21,31,37,41,30;261,20051020,6,17,18,21,35,41,32;262,20051027,5,7,11,19,21,25,27;263,20051103,1,5,13,22,39,41,4;264,20051110,2,5,6,8,20,27,43;265,20051117,2,3,16,22,23,28,40;266,20051124,11,15,18,24,30,39,7;267,20051201,3,5,8,22,35,38,41;268,20051208,3,6,8,14,24,36,15;269,20051215,1,10,13,15,21,23,36;270,20051222,17,19,21,29,33,38,30;271,20051229,9,10,19,25,40,41,8;272,20060105,7,12,13,20,23,26,41;273,20060112,4,18,20,21,29,40,37;274,20060119,4,5,14,27,31,39,6;275,20060126,4,13,15,31,33,40,8;276,20060202,6,11,27,30,33,36,34;277,20060209,7,9,18,20,30,38,23;278,20060216,9,13,14,17,22,38,33;279,20060223,7,11,12,23,30,43,27;280,20060302,6,12,26,37,38,39,25;281,20060309,3,9,10,11,19,35,30;282,20060316,1,9,17,31,41,43,23;283,20060323,6,9,16,22,27,37,36;284,20060330,20,26,30,33,35,38,4;285,20060406,1,3,9,14,16,29,37;286,20060413,10,11,14,28,31,41,3;287,20060420,1,5,18,34,35,39,7;288,20060427,3,4,11,25,28,33,35;289,20060504,7,9,12,17,34,38,3;290,20060511,11,13,15,17,22,43,8;291,20060518,10,15,20,28,41,43,19;292,20060525,7,14,27,31,34,39,40;293,20060601,6,8,15,17,36,43,38;294,20060608,2,5,13,14,17,20,21;295,20060615,9,12,18,20,37,43,5;296,20060622,4,19,27,30,31,37,10;297,20060629,6,8,9,20,38,40,2;298,20060706,12,25,29,31,35,40,26;299,20060713,2,4,5,17,35,41,18;300,20060720,4,7,29,33,36,39,9;301,20060727,4,5,6,9,10,11,33;302,20060803,2,4,13,23,38,40,24;303,20060810,4,24,31,35,37,39,13;304,20060817,3,7,8,15,17,31,27;305,20060824,1,2,5,23,31,34,43;306,20060831,1,20,25,28,31,42,2;307,20060907,1,7,11,32,33,40,27;308,20060914,3,13,18,20,23,28,35;309,20060921,1,4,26,36,41,42,9;310,20060928,3,4,5,18,28,37,26;311,20061005,1,16,22,36,37,42,34;312,20061012,2,17,22,29,38,42,16;313,20061019,1,19,21,31,32,40,33;314,20061026,3,8,14,30,38,43,6;315,20061102,1,2,17,24,40,41,31;316,20061109,3,4,20,30,40,41,31;317,20061116,7,8,15,30,35,36,40;318,20061123,2,7,13,16,36,37,41;319,20061130,15,20,23,28,37,40,17;320,20061207,1,5,25,27,38,41,9;321,20061214,21,29,31,36,38,41,10;322,20061221,18,19,22,25,35,42,36;323,20061228,9,11,21,23,33,39,26;324,20070104,5,13,27,37,39,41,36;325,20070111,6,7,18,29,33,39,43;326,20070118,1,7,9,14,23,43,19;327,20070125,6,12,14,28,31,36,35;328,20070201,3,7,10,12,19,36,35;329,20070208,6,8,15,17,39,40,37;330,20070215,5,12,16,19,28,39,34;331,20070222,2,8,17,24,32,38,35;332,20070301,7,8,16,24,26,34,19;333,20070308,1,5,7,15,41,42,38;334,20070315,11,14,17,18,34,36,23;335,20070322,4,5,10,23,36,42,8;336,20070329,3,6,13,17,20,29,11;337,20070405,5,15,16,20,34,39,29;338,20070412,8,10,25,31,39,40,35;339,20070419,3,5,9,26,34,36,12;340,20070426,4,10,13,31,35,42,7;341,20070503,4,14,23,25,28,35,41;342,20070510,8,15,26,27,34,38,10;343,20070517,13,28,29,37,38,41,35;344,20070524,8,11,16,20,28,36,42;345,20070531,10,21,22,25,35,37,18;346,20070607,4,9,11,12,32,38,16;347,20070614,8,20,23,27,32,33,13;348,20070621,4,5,6,27,36,38,13;349,20070628,8,13,15,19,20,30,25;350,20070705,13,18,25,26,29,40,6;351,20070712,3,13,16,24,26,43,15;352,20070719,6,8,24,25,34,38,10;353,20070726,1,9,15,16,22,26,29;354,20070802,4,6,22,31,34,41,43;355,20070809,1,11,24,26,36,37,39;356,20070816,1,5,8,12,17,29,28;357,20070823,2,10,11,12,19,38,6;358,20070830,12,31,32,34,39,42,30;359,20070906,3,5,19,20,23,27,40;360,20070913,2,3,6,14,26,42,25;361,20070920,1,21,28,30,37,43,31;362,20070927,7,10,15,20,37,40,28;363,20071004,3,6,7,22,27,31,4;364,20071011,7,11,12,19,33,42,36;365,20071018,6,19,20,28,36,37,11;366,20071025,12,13,15,18,30,41,21;367,20071101,10,13,17,38,41,43,28;368,20071108,7,10,18,21,33,35,13;369,20071115,3,9,12,16,18,37,14;370,20071122,2,11,13,15,16,32,43;371,20071129,14,15,23,24,32,34,31;372,20071206,7,19,28,33,35,39,21;373,20071213,7,14,15,19,35,43,30;374,20071220,4,24,25,26,27,34,28;375,20071227,7,9,14,17,36,37,11;376,20080110,20,21,25,27,34,38,16;377,20080117,2,3,8,20,21,24,13;378,20080124,11,13,19,26,36,43,31;379,20080131,8,13,15,21,33,34,5;380,20080207,17,22,25,26,27,43,16;381,20080214,4,13,15,22,39,41,30;382,20080221,2,6,15,28,29,43,14;383,20080228,7,12,17,18,24,28,43;384,20080306,17,19,20,22,33,41,35;385,20080313,6,31,34,35,37,40,7;386,20080320,2,9,11,15,23,25,27;387,20080327,12,16,19,27,30,32,38;388,20080403,5,12,14,18,20,31,2;389,20080410,6,12,22,25,31,35,28;390,20080417,5,16,17,22,39,43,21;391,20080424,8,20,23,24,29,38,43;392,20080501,10,15,18,30,31,37,11;393,20080508,7,18,27,37,38,43,35;394,20080515,14,27,28,31,37,40,18;395,20080522,15,21,26,28,42,43,39;396,20080529,9,12,21,26,33,40,5;397,20080605,15,16,23,30,39,43,11;398,20080612,2,31,36,37,39,43,13;399,20080619,1,14,17,28,31,37,21;400,20080626,4,9,19,22,23,33,38;401,20080703,14,15,27,34,35,42,37;402,20080710,3,18,23,24,29,33,28;403,20080717,8,10,13,20,24,33,23;404,20080724,3,10,14,18,26,43,33;405,20080731,6,13,19,20,30,31,8;406,20080807,1,2,4,16,36,37,40;407,20080814,11,18,19,30,37,39,38;408,20080821,12,20,23,28,31,32,39;409,20080828,6,13,17,27,28,36,33;410,20080904,2,12,16,20,42,43,28;411,20080911,2,4,6,24,35,39,34;412,20080918,2,6,7,9,16,19,33;413,20080925,2,14,15,26,35,37,25;414,20081002,1,2,4,5,9,25,15;415,20081009,9,28,33,34,37,43,41;416,20081016,12,15,22,24,29,37,6;417,20081023,3,20,23,30,31,37,6;418,20081030,3,12,16,25,32,36,34;419,20081106,5,8,16,25,26,30,1;420,20081113,14,19,21,28,29,31,24;421,20081120,2,6,8,10,25,34,31;422,20081127,5,6,7,8,28,38,36;423,20081204,1,2,3,30,35,36,21;424,20081211,3,13,17,25,40,41,4;425,20081218,2,3,12,20,34,43,4;426,20081225,6,8,9,29,32,37,4;427,20090108,5,12,13,33,39,42,20;428,20090115,8,16,18,35,42,43,13;429,20090122,17,25,29,33,37,42,7;430,20090129,1,8,18,26,34,42,21;431,20090205,1,5,19,20,35,41,33;432,20090212,8,20,23,24,42,43,16;433,20090219,3,9,11,24,26,34,25;434,20090226,3,12,19,33,35,36,37;435,20090305,2,11,12,28,35,37,27;436,20090312,4,12,21,22,27,38,31;437,20090319,2,5,11,21,23,43,15;438,20090326,3,9,16,17,20,31,42;439,20090402,11,14,20,28,32,41,27;440,20090409,9,23,29,30,31,39,18;441,20090416,10,18,33,34,39,41,21;442,20090423,2,23,26,35,41,42,38;443,20090430,6,10,21,22,23,35,5;444,20090507,5,13,16,18,24,32,30;445,20090514,10,20,23,26,37,40,9;446,20090521,3,8,17,26,27,36,13;447,20090528,15,23,29,36,42,43,34;448,20090604,9,23,32,35,39,42,37;449,20090611,19,20,21,23,27,32,24;450,20090618,15,20,21,32,40,42,27;451,20090625,6,14,16,19,26,39,21;452,20090702,1,5,25,27,29,40,19;453,20090709,7,17,19,27,35,40,41;454,20090716,2,16,18,27,42,43,12;455,20090723,11,20,26,28,30,43,24;456,20090730,3,7,15,25,30,39,22;457,20090806,10,12,27,32,34,43,42;458,20090813,1,18,27,30,36,40,5;459,20090820,11,13,27,31,37,43,30;460,20090827,18,22,23,32,35,40,7;461,20090903,8,10,13,30,32,42,12;462,20090910,2,4,6,16,31,33,5;463,20090917,10,13,16,25,30,42,28;464,20090924,10,21,22,25,27,37,36;465,20091001,6,24,27,30,32,38,13;466,20091008,1,4,19,28,34,40,14;467,20091015,18,19,20,24,32,43,41;468,20091022,9,17,26,30,34,40,33;469,20091029,10,12,20,35,40,43,28;470,20091105,1,11,17,23,38,43,18;471,20091112,2,13,14,22,23,32,34;472,20091119,10,17,28,30,36,42,5;473,20091126,6,16,17,22,34,37,26;474,20091203,12,15,19,25,28,41,18;475,20091210,5,9,10,27,33,42,2;476,20091217,7,17,22,30,36,40,2;477,20091224,12,14,16,18,38,41,17;478,20100107,11,14,23,30,31,38,42;479,20100114,5,7,14,17,20,27,3;480,20100121,2,5,17,18,35,38,34;481,20100128,2,9,11,24,25,34,20;482,20100204,4,30,31,36,37,38,19;483,20100211,2,8,15,24,33,35,30;484,20100218,13,19,25,29,32,35,42;485,20100225,14,26,30,33,34,39,19;486,20100304,16,25,27,29,34,41,6;487,20100311,2,6,8,19,22,34,30;488,20100318,5,15,29,34,39,42,6;489,20100325,6,8,12,30,33,43,36;490,20100401,5,9,13,28,34,40,10;491,20100408,7,9,20,27,31,34,33;492,20100415,1,8,12,20,23,37,10;493,20100422,8,26,30,36,41,42,20;494,20100429,8,16,19,23,26,31,6;495,20100506,4,6,20,21,29,33,31;496,20100513,2,6,11,29,32,41,3;497,20100520,6,12,14,17,36,40,34;498,20100527,1,25,36,41,42,43,39;499,20100603,3,9,15,16,22,35,12;500,20100610,6,20,28,31,34,38,10;501,20100617,3,17,21,23,36,38,7;502,20100624,9,12,27,28,29,41,7;503,20100701,1,18,25,27,28,39,11;504,20100708,12,21,22,27,29,31,35;505,20100715,19,21,27,33,34,43,41;506,20100722,5,11,21,27,37,39,26;507,20100729,5,14,19,21,28,31,17;508,20100805,1,7,14,15,24,42,13;509,20100812,3,4,12,18,27,28,40;510,20100819,12,15,26,35,41,43,25;511,20100826,4,22,23,27,38,43,9;512,20100902,14,20,23,25,33,39,34;513,20100909,1,6,12,14,15,19,18;514,20100916,6,7,14,15,19,41,31;515,20100923,2,3,23,25,33,35,34;516,20100930,2,14,16,17,29,30,10;517,20101007,6,10,13,14,28,37,39;518,20101014,14,31,34,35,40,42,25;519,20101021,1,13,25,29,30,33,35;520,20101028,2,4,12,14,26,43,40;521,20101104,1,8,15,21,23,30,33;522,20101111,3,6,16,23,25,43,37;523,20101118,7,8,26,27,41,43,16;524,20101125,7,11,14,18,35,40,43;525,20101202,1,11,17,28,33,38,20;526,20101209,8,14,18,19,26,27,23;527,20101216,5,7,12,23,39,41,9;528,20101223,2,5,12,21,28,32,41;529,20101230,6,19,21,24,31,41,7;530,20110106,1,10,19,30,33,36,35;531,20110113,5,12,16,24,26,33,8;532,20110120,23,28,33,35,37,42,4;533,20110127,6,16,24,31,41,43,7;534,20110203,1,2,19,22,26,37,43;535,20110210,6,14,23,24,27,32,11;536,20110217,4,10,12,14,23,36,2;537,20110224,10,18,22,24,26,37,12;538,20110303,2,11,14,23,26,33,28;539,20110310,3,10,13,17,18,28,24;540,20110317,15,23,29,35,36,41,42;541,20110324,3,4,5,28,34,43,20;542,20110331,10,14,23,35,38,41,17;543,20110404,15,17,18,19,22,31,30;544,20110407,11,14,16,32,41,42,33;545,20110411,16,21,24,28,32,36,35;546,20110414,1,14,30,34,40,43,27;547,20110418,6,10,11,30,32,39,27;548,20110421,12,13,16,28,29,35,5;549,20110425,5,14,27,29,32,33,16;550,20110428,12,15,19,32,36,42,37;551,20110502,15,16,19,21,26,42,10;552,20110505,13,22,26,30,40,41,8;553,20110509,3,9,11,15,27,37,10;554,20110512,16,27,34,35,36,38,37;555,20110516,2,3,7,9,36,42,5;556,20110519,6,9,13,17,29,30,25;557,20110523,6,18,23,32,38,43,37;558,20110526,4,32,33,38,41,43,2;559,20110530,2,7,16,25,26,43,3;560,20110602,4,17,19,37,39,42,16;561,20110606,4,14,30,35,40,41,29;562,20110609,9,10,11,25,30,37,12;563,20110613,4,5,26,28,34,38,8;564,20110616,3,12,18,24,34,39,16;565,20110620,3,6,8,21,28,32,10;566,20110623,10,17,18,29,30,41,7;567,20110627,7,13,17,23,28,34,25;568,20110630,7,10,15,31,32,42,41;569,20110704,4,19,21,25,28,40,38;570,20110707,2,4,10,28,38,43,25;571,20110711,6,20,21,23,33,38,10;572,20110714,10,12,18,38,42,43,40;573,20110718,3,5,21,30,37,38,11;574,20110721,4,11,16,20,26,43,9;575,20110725,4,11,17,21,23,30,18;576,20110728,8,9,21,24,29,37,1;577,20110801,3,12,29,31,36,37,26;578,20110804,16,22,23,27,33,37,36;579,20110808,6,8,17,19,23,42,32;580,20110811,12,15,17,25,35,43,32;581,20110815,5,22,28,29,35,39,21;582,20110818,7,10,14,25,32,38,13;583,20110822,2,12,17,18,40,43,16;584,20110825,10,11,24,26,37,38,21;585,20110829,1,28,32,34,41,42,22;586,20110901,6,7,10,23,36,42,11;587,20110905,10,12,18,27,33,40,42;588,20110908,8,13,18,33,34,36,23;589,20110912,1,9,10,28,41,42,33;590,20110915,20,24,25,27,32,37,2;591,20110919,1,13,16,22,27,33,5;592,20110922,12,14,22,23,34,41,36;593,20110926,2,10,16,26,29,30,4;594,20110929,4,5,15,30,34,38,2;595,20111003,1,5,15,22,39,40,27;596,20111006,2,13,17,24,29,34,12;597,20111010,3,4,7,13,16,23,1;598,20111013,6,10,15,21,36,41,40;599,20111017,1,2,8,13,27,39,36;600,20111020,3,20,23,24,28,35,26;601,20111024,6,22,25,26,30,39,32;602,20111027,8,13,15,18,24,41,27;603,20111031,3,8,18,21,23,42,17;604,20111103,9,15,20,22,28,43,37;605,20111107,1,4,13,25,38,43,11;606,20111110,8,15,24,26,35,42,7;607,20111114,2,3,8,12,20,21,16;608,20111117,4,6,16,17,18,26,40;609,20111121,18,24,36,37,39,41,1;610,20111124,2,5,12,23,26,41,36;611,20111128,10,12,14,24,34,39,16;612,20111201,7,18,31,32,39,40,35;613,20111205,2,6,18,26,32,37,5;614,20111208,2,6,22,25,31,42,1;615,20111212,6,16,24,32,36,43,28;616,20111215,4,7,18,19,24,35,17;617,20111219,5,8,18,28,34,35,10;618,20111222,4,15,21,31,35,42,13;619,20111226,2,11,29,31,33,38,14;620,20111229,7,10,13,19,31,38,12;621,20120105,6,15,16,28,36,40,20;622,20120109,7,16,18,20,27,36,41;623,20120112,7,8,16,35,39,42,9;624,20120116,4,8,12,22,25,30,43;625,20120119,5,17,26,37,39,42,20;626,20120123,6,13,14,22,26,28,10;627,20120126,2,4,7,19,34,42,30;628,20120130,7,13,15,18,29,38,30;629,20120202,6,16,21,30,34,43,36;630,20120206,3,7,13,18,19,41,38;631,20120209,2,5,7,10,36,40,12;632,20120213,3,4,14,21,22,25,26;633,20120216,7,9,11,14,15,18,5;634,20120220,8,10,13,15,20,40,23;635,20120223,8,11,12,15,41,43,22;636,20120227,2,12,21,23,24,26,36;637,20120301,7,12,16,28,31,34,11;638,20120305,6,11,19,28,35,40,14;639,20120308,1,16,20,24,33,34,8;640,20120312,3,11,18,20,33,39,22;641,20120315,3,14,21,24,26,29,32;642,20120319,8,13,14,21,33,41,18;643,20120322,2,6,21,31,35,37,15;644,20120326,4,14,22,23,26,42,2;645,20120329,3,10,12,32,33,43,31;646,20120402,9,12,14,24,28,33,37;647,20120405,2,7,15,22,36,43,27;648,20120409,22,26,27,28,36,43,1;649,20120412,14,22,29,33,36,40,38;650,20120416,12,31,34,40,41,43,6;651,20120419,4,15,17,34,38,40,5;652,20120423,1,10,16,19,20,39,29;653,20120426,13,21,22,26,29,36,31;654,20120430,12,18,21,29,32,38,2;655,20120503,5,10,23,26,28,29,27;656,20120507,2,8,13,17,25,37,30;657,20120510,3,20,29,33,34,40,2;658,20120514,14,24,32,40,41,42,9;659,20120517,21,30,35,39,41,42,3;660,20120521,8,20,31,36,37,38,39;661,20120524,6,9,17,20,33,40,26;662,20120528,12,31,32,34,36,40,6;663,20120531,13,18,21,30,33,40,25;664,20120604,2,8,11,12,26,29,22;665,20120607,13,22,27,29,36,37,40;666,20120611,2,6,28,30,31,41,7;667,20120614,21,31,34,37,39,40,15;668,20120618,7,13,20,27,34,35,22;669,20120621,4,6,10,17,24,33,19;670,20120625,1,4,7,25,32,41,18;671,20120628,5,10,14,16,23,38,21;672,20120702,1,5,23,24,36,43,19;673,20120705,2,6,16,27,28,29,38;674,20120709,8,11,15,22,40,41,39;675,20120712,8,10,15,21,24,34,28;676,20120716,2,8,20,33,38,42,21;677,20120719,4,11,22,31,32,35,23;678,20120723,8,24,25,29,32,40,28;679,20120726,4,5,7,37,41,42,39;680,20120730,8,9,23,34,38,41,6;681,20120802,1,11,13,30,37,41,27;682,20120806,3,5,7,18,19,41,34;683,20120809,16,24,29,32,35,38,37;684,20120813,6,7,13,18,27,33,16;685,20120816,12,23,27,32,39,43,15;686,20120820,21,24,26,35,37,38,16;687,20120823,16,20,27,33,40,42,34;688,20120827,9,12,16,33,34,35,1;689,20120830,6,8,12,17,24,31,38;690,20120903,7,8,10,21,34,38,30;691,20120906,4,7,8,15,16,42,23;692,20120910,9,10,12,19,21,42,15;693,20120913,4,14,18,22,32,35,10;694,20120917,8,23,27,31,38,40,3;695,20120920,4,7,11,12,13,19,27;696,20120924,2,10,14,19,36,39,9;697,20120927,2,12,14,18,40,41,6;698,20121001,5,20,21,26,30,33,27;699,20121004,12,13,21,25,29,32,20;700,20121008,1,8,17,24,33,35,11;701,20121011,20,22,24,32,36,39,29;702,20121015,1,20,23,37,38,40,4;703,20121018,20,24,27,28,38,41,4;704,20121022,7,10,16,18,19,37,20;705,20121025,14,15,16,18,20,33,3;706,20121029,2,8,29,31,34,37,9;707,20121101,8,15,21,32,40,41,7;708,20121105,2,13,20,22,25,38,35;709,20121108,1,11,13,29,37,39,8;710,20121112,4,5,9,20,33,37,35;711,20121115,5,11,15,24,34,39,37;712,20121119,2,5,8,9,14,25,18;713,20121122,19,20,21,24,25,26,35;714,20121126,2,14,26,28,29,42,13;715,20121129,5,10,12,25,28,31,36;716,20121203,5,7,14,24,25,35,32;717,20121206,13,14,16,21,29,42,20;718,20121210,15,20,27,29,33,43,18;719,20121213,11,14,27,31,34,42,13;720,20121217,25,26,27,28,35,38,19;721,20121220,1,14,23,24,27,40,10;722,20121224,6,11,32,34,35,39,18;723,20121227,16,27,28,36,39,42,2;724,20130107,4,9,32,37,38,39,31;725,20130110,5,6,7,20,31,41,22;726,20130114,13,21,30,31,37,40,14;727,20130117,3,24,26,27,39,41,4;728,20130121,10,15,22,23,38,42,12;729,20130124,2,10,16,18,27,42,22;730,20130128,10,15,21,22,33,35,1;731,20130131,6,7,23,25,38,42,21;732,20130204,20,33,35,36,37,38,29;733,20130207,5,13,14,26,37,38,28;734,20130211,10,19,22,27,29,39,21;735,20130214,5,12,19,22,32,39,14;736,20130218,2,14,17,19,38,43,6;737,20130221,6,10,21,24,27,39,11;738,20130225,14,21,22,32,33,41,9;739,20130228,11,13,18,20,28,38,31;740,20130304,8,9,15,26,37,40,18;741,20130307,8,11,15,29,36,43,18;742,20130311,2,12,13,14,22,35,4;743,20130314,3,4,8,10,14,37,32;744,20130318,2,5,12,14,30,42,3;745,20130321,8,12,16,23,33,34,6;746,20130325,6,9,10,29,31,35,28;747,20130328,8,19,20,23,24,35,5;748,20130401,2,14,16,27,28,30,21;749,20130404,7,8,11,13,23,40,25;750,20130408,4,6,13,16,18,39,34;751,20130411,13,16,21,25,31,38,43;752,20130415,3,5,13,18,22,37,14;753,20130418,2,4,11,15,20,38,18;754,20130422,16,27,33,35,39,41,42;755,20130425,10,16,20,25,29,39,2;756,20130429,8,10,24,26,27,28,32;757,20130502,4,10,14,19,35,38,17;758,20130506,11,19,20,25,38,40,33;759,20130509,14,22,25,28,37,41,31;760,20130513,3,4,6,15,32,40,34;761,20130516,8,10,11,12,20,40,42;762,20130520,6,8,9,20,24,27,40;763,20130523,6,8,10,21,39,42,36;764,20130527,6,7,24,34,42,43,14;765,20130530,4,14,17,22,26,41,6;766,20130603,6,10,12,32,37,39,33;767,20130606,2,6,11,27,29,37,14;768,20130610,1,8,19,25,32,38,39;769,20130613,1,2,4,16,17,38,8;770,20130617,17,19,21,22,36,37,25;771,20130620,15,21,31,32,33,34,27;772,20130624,7,11,16,19,20,23,30;773,20130627,4,7,10,11,12,32,9;774,20130701,2,4,9,13,16,33,15;775,20130704,1,2,21,22,37,38,17;776,20130708,2,8,14,23,28,42,25;777,20130711,15,16,23,29,37,39,42;778,20130715,5,11,17,24,35,41,3;779,20130718,10,13,27,34,36,39,7;780,20130722,6,7,12,26,39,43,4;781,20130725,5,6,15,23,40,43,39;782,20130729,19,21,23,24,27,43,10;783,20130801,9,14,22,24,25,32,13;784,20130805,1,9,23,29,37,41,22;785,20130808,1,9,18,20,24,29,15;786,20130812,10,11,17,31,35,39,23;787,20130815,4,5,13,21,33,34,15;788,20130819,2,8,13,27,31,32,16;789,20130822,12,17,29,32,38,40,28;790,20130826,9,13,19,27,34,38,8;791,20130829,1,10,22,24,34,37,20;792,20130902,1,7,14,25,37,43,4;793,20130905,10,13,14,19,26,43,12;794,20130909,15,22,25,29,34,42,2;795,20130912,13,19,24,28,33,38,29;796,20130916,1,7,11,14,22,34,2;797,20130919,1,4,13,18,23,39,35;798,20130923,1,3,5,25,39,41,34;799,20130926,4,6,8,10,19,28,25;800,20130930,8,12,22,23,25,35,43;801,20131003,2,18,19,20,25,31,32;802,20131007,9,13,18,19,25,30,15;803,20131010,9,29,33,34,35,41,27;804,20131014,6,20,23,25,31,33,30;805,20131017,2,14,19,22,24,43,6;806,20131021,3,16,19,25,39,40,29;807,20131024,1,6,12,20,22,23,27;808,20131028,13,18,22,28,41,42,26;809,20131031,2,11,20,31,32,37,17;810,20131104,3,31,32,38,39,40,37;811,20131107,2,6,20,24,31,40,34;812,20131111,1,12,15,26,34,40,22;813,20131114,9,10,12,13,28,38,39;814,20131118,4,7,15,23,38,42,1;815,20131121,1,2,6,24,25,41,29;816,20131125,5,14,19,24,27,37,9;817,20131128,16,21,27,32,34,43,42;818,20131202,5,21,24,34,37,38,16;819,20131205,10,19,23,25,30,40,14;820,20131209,1,11,19,28,39,43,16;821,20131212,7,10,12,34,40,43,16;822,20131216,6,11,15,24,27,33,29;823,20131219,5,6,23,30,37,38,28;824,20131223,16,19,26,27,29,32,4;825,20131226,6,10,12,16,39,40,20;826,20131230,5,15,22,24,29,36,2;827,20140106,2,4,23,24,33,41,5;828,20140109,2,9,10,24,25,43,26;829,20140113,2,3,23,32,36,39,20;830,20140116,5,6,9,18,28,40,22;831,20140120,3,4,7,13,22,31,19;832,20140123,19,24,27,31,32,33,17;833,20140127,5,6,13,20,22,28,2;834,20140130,4,17,27,39,41,42,8;835,20140203,5,9,10,28,39,40,24;836,20140206,7,11,31,34,38,43,28;837,20140210,5,17,34,37,39,42,28;838,20140213,12,28,32,36,38,43,13;839,20140217,1,3,5,12,13,38,37;840,20140220,3,4,17,24,27,34,39;841,20140224,8,22,24,28,31,36,38;842,20140227,8,11,17,26,33,43,24;843,20140303,3,7,8,26,42,43,11;844,20140306,2,5,18,27,35,38,24;845,20140310,2,12,13,22,24,34,20;846,20140313,9,14,18,28,30,33,4;847,20140317,9,10,23,31,35,36,38;848,20140320,6,7,13,15,35,39,33;849,20140324,1,3,4,10,15,40,34;850,20140327,2,11,30,32,38,41,4;851,20140331,5,8,14,20,26,27,7;852,20140403,3,17,22,23,27,40,35;853,20140407,2,9,22,26,31,35,7;854,20140410,4,11,14,18,25,37,42;855,20140414,10,13,15,25,37,42,30;856,20140417,10,24,32,34,38,40,43;857,20140421,1,3,6,17,28,42,24;858,20140424,3,14,29,32,33,42,40;859,20140428,1,12,15,17,21,36,24;860,20140501,14,16,32,35,38,41,6;861,20140505,4,17,21,28,35,42,29;862,20140508,5,10,16,34,36,39,43;863,20140512,4,14,18,26,35,36,2;864,20140515,19,21,24,28,32,40,12;865,20140519,5,7,8,12,23,25,26;866,20140522,1,3,10,21,29,43,39;867,20140526,2,14,21,26,37,38,18;868,20140529,5,18,19,26,31,43,10;869,20140602,5,7,23,24,37,38,40;870,20140605,1,11,14,21,23,39,26;871,20140609,3,10,11,13,20,27,25;872,20140612,6,10,17,18,19,24,7;873,20140616,4,22,26,27,32,43,20;874,20140619,2,8,21,27,33,37,42;875,20140623,4,5,11,13,22,25,43;876,20140626,11,12,18,25,35,39,9;877,20140630,3,14,17,32,35,43,10;878,20140703,5,14,16,22,25,40,43;879,20140707,24,27,34,35,36,43,25;880,20140710,1,8,11,16,25,32,19;881,20140714,4,6,12,18,28,41,35;882,20140717,5,15,23,26,30,36,6;883,20140721,10,16,25,29,38,42,23;884,20140724,2,7,25,26,38,42,19;885,20140728,22,28,33,36,37,41,14;886,20140731,7,10,13,23,34,39,11;887,20140804,3,4,6,18,32,37,7;888,20140807,2,4,9,36,37,39,43;889,20140811,2,10,21,28,41,43,12;890,20140814,1,4,6,14,28,31,21;891,20140818,7,9,14,30,42,43,24;892,20140821,14,19,31,35,40,43,38;893,20140825,10,12,26,28,29,37,34;894,20140828,4,5,9,20,21,32,40;895,20140901,5,12,24,25,37,38,39;896,20140904,5,6,21,27,32,38,34;897,20140908,8,10,14,15,27,30,12;898,20140911,13,17,21,25,29,37,23;899,20140915,3,10,15,18,27,40,38;900,20140918,8,12,21,22,31,35,2;901,20140922,6,13,22,28,29,37,14;902,20140925,11,21,26,31,32,33,22;903,20140929,1,3,6,7,16,19,12;904,20141002,2,4,6,15,21,41,29;905,20141006,4,15,24,40,41,42,31;906,20141009,6,9,12,13,30,40,31;907,20141013,5,13,18,22,27,41,19;908,20141016,6,14,21,22,23,30,32;909,20141020,12,15,21,27,30,35,28;910,20141023,11,12,13,17,25,33,14;911,20141027,8,16,18,22,27,35,3;912,20141030,5,14,19,20,32,42,11;913,20141103,5,8,20,31,36,41,16;914,20141106,2,3,26,33,36,40,19;915,20141110,7,12,21,33,38,40,42;916,20141113,6,14,25,27,38,43,21;917,20141117,2,6,25,26,41,42,18;918,20141120,10,15,25,29,34,36,39;919,20141124,2,9,12,17,33,42,26;920,20141127,9,17,27,30,35,38,6;921,20141201,5,7,26,36,38,39,32;922,20141204,4,6,19,32,33,38,1;923,20141208,5,13,30,31,32,35,29;924,20141211,13,20,24,32,35,42,43;925,20141215,25,26,27,28,32,37,40;926,20141218,16,26,32,35,37,39,25;927,20141222,2,29,30,31,33,34,37;928,20141225,1,21,23,26,31,33,14;929,20141229,10,12,15,25,31,34,26;930,20150105,10,12,37,39,40,43,11;931,20150108,14,18,19,24,25,33,21;932,20150112,4,15,30,37,42,43,32;933,20150115,5,9,20,21,31,41,26;934,20150119,3,7,16,17,20,32,12;935,20150122,2,12,14,26,38,43,8;936,20150126,1,3,12,16,20,35,5;937,20150129,13,15,21,25,36,41,8;938,20150202,5,9,12,19,30,35,29;939,20150205,8,11,15,17,26,43,32;940,20150209,1,18,28,31,35,37,39;941,20150212,5,12,22,29,38,39,19;942,20150216,2,3,14,27,28,38,8;943,20150219,9,10,14,15,39,43,25;944,20150223,7,20,25,29,33,37,27;945,20150226,3,10,15,23,36,37,31;946,20150302,2,9,12,16,31,36,41;947,20150305,1,6,21,23,27,40,9;948,20150309,7,16,17,28,39,43,24;949,20150312,5,19,26,36,39,43,9;950,20150316,2,6,16,24,30,41,18;951,20150319,11,15,22,23,26,30,37;952,20150323,10,16,22,25,31,39,27;953,20150326,2,9,17,38,39,42,20;954,20150330,3,23,24,28,29,42,41;955,20150402,14,19,27,28,37,42,24;956,20150406,1,4,6,22,24,38,34;957,20150409,2,11,22,32,36,42,20;958,20150413,9,18,23,24,26,30,21;959,20150416,1,16,18,28,36,38,42;960,20150420,5,18,23,32,35,39,10;961,20150423,5,11,17,18,19,25,34;962,20150427,4,6,10,24,32,37,35;963,20150430,4,23,29,31,32,35,17;964,20150504,2,21,23,29,30,43,26;965,20150507,10,12,19,20,21,22,13;966,20150511,10,22,31,34,36,43,30;967,20150514,1,11,26,30,32,40,8;968,20150518,6,10,15,20,23,26,17;969,20150521,3,9,19,22,23,40,10;970,20150525,2,4,18,23,31,38,1;971,20150528,2,3,4,12,22,29,11;972,20150601,2,7,17,18,21,40,29;973,20150604,1,5,6,12,30,31,24;974,20150608,2,3,29,30,32,43,26;975,20150611,3,11,13,27,29,36,15;976,20150615,6,13,22,28,42,43,29;977,20150618,10,15,17,27,42,43,33;978,20150622,3,11,19,30,38,42,31;979,20150625,9,12,16,18,27,38,10;980,20150629,15,20,23,35,38,42,13;981,20150702,14,19,22,23,31,37,21;982,20150706,15,19,21,22,29,40,42;983,20150709,15,19,32,35,36,38,31;984,20150713,14,23,24,28,37,38,20;985,20150716,3,11,19,26,29,38,31;986,20150720,4,11,17,30,36,43,5;987,20150723,3,14,15,24,25,36,33;988,20150727,5,6,10,22,34,41,19;989,20150730,5,7,31,33,36,39,21;990,20150803,4,12,16,27,28,41,42;991,20150806,3,18,21,25,29,37,35;992,20150810,4,6,8,22,27,38,34;993,20150813,1,5,10,32,38,40,18;994,20150817,18,22,29,31,39,43,9;995,20150820,7,11,17,21,37,39,36;996,20150824,1,3,14,26,27,42,25;997,20150827,3,5,8,11,33,43,23;998,20150831,1,3,12,19,26,29,28;999,20150903,8,15,17,30,32,36,43;1000,20150907,1,15,21,22,26,29,37;1001,20150910,9,12,15,16,18,35,2;1002,20150914,8,14,22,25,27,41,11;1003,20150917,13,22,26,34,38,43,42;1004,20150921,3,21,23,24,27,32,36;1005,20150924,5,13,20,24,25,27,42;1006,20150928,7,8,16,31,32,33,12;1007,20151001,3,8,17,25,28,43,42;1008,20151005,11,14,16,21,24,39,36;1009,20151008,3,19,34,36,40,43,28;1010,20151012,6,12,16,24,25,37,17;1011,20151015,23,26,27,29,30,43,6;1012,20151019,9,11,19,22,27,38,2;1013,20151022,3,20,36,38,39,41,22;1014,20151026,2,3,9,19,40,42,6;1015,20151029,9,14,20,23,27,32,22;1016,20151102,1,14,31,32,39,42,34;1017,20151105,1,4,24,30,39,40,5;1018,20151109,3,22,25,28,32,39,21;1019,20151112,8,14,15,22,25,40,19;1020,20151116,2,25,27,28,35,42,6;1021,20151119,3,30,32,33,34,39,28;1022,20151123,3,15,19,30,34,37,12;1023,20151126,9,17,24,25,33,40,43;1024,20151130,2,4,5,20,37,43,32;1025,20151203,10,17,20,21,36,43,34;1026,20151207,1,8,11,17,22,26,31;1027,20151210,13,16,17,19,20,38,18;1028,20151214,7,10,18,21,28,36,40;1029,20151217,5,13,22,31,37,39,4;1030,20151221,4,9,17,20,23,42,19;1031,20151224,2,4,7,22,32,35,1;1032,20151228,11,20,21,30,36,43,17;1033,20160104,1,15,21,24,37,41,7;1034,20160107,14,20,24,25,31,32,29;1035,20160111,9,15,17,19,27,33,40;1036,20160114,2,8,17,27,30,31,13;1037,20160118,1,3,12,13,21,32,41;1038,20160121,3,7,24,25,27,39,20;1039,20160125,6,9,20,34,37,41,25;1040,20160128,7,13,15,21,23,34,12;1041,20160201,14,22,27,29,33,37,24;1042,20160204,4,10,11,12,18,25,36;1043,20160208,21,29,30,32,38,42,16;1044,20160211,3,7,16,26,34,39,23;1045,20160215,1,19,21,30,31,43,18;1046,20160218,6,13,17,18,27,43,21;1047,20160222,5,9,13,31,32,35,26;1048,20160225,26,27,30,31,34,40,20;1049,20160229,3,6,15,23,24,31,11;1050,20160303,3,8,14,28,31,43,35;1051,20160307,5,13,20,28,30,32,16;1052,20160310,6,26,34,37,42,43,13;1053,20160314,4,11,23,27,35,42,15;1054,20160317,7,9,10,19,28,33,36;1055,20160321,5,11,20,25,26,32,6;1056,20160324,14,16,19,29,32,37,24;1057,20160328,2,11,19,21,28,38,25;1058,20160331,11,12,17,23,29,43,37;1059,20160404,8,26,27,29,35,43,6;1060,20160407,5,10,16,17,32,37,36;1061,20160411,1,12,14,16,20,29,4;1062,20160414,2,7,28,39,42,43,41;1063,20160418,6,12,13,34,38,42,41;1064,20160421,4,13,18,27,30,39,34;1065,20160425,11,13,27,37,41,42,40;1066,20160428,2,11,29,36,40,42,17;1067,20160502,5,9,25,27,28,33,10;1068,20160505,3,9,21,34,35,42,4;1069,20160509,12,17,26,30,33,40,8;1070,20160512,11,21,25,34,35,36,15;1071,20160516,1,10,25,27,31,40,3;1072,20160519,3,17,20,32,36,43,4;1073,20160523,1,3,5,8,20,39,30;1074,20160526,8,9,16,27,30,33,19;1075,20160530,7,8,21,24,34,42,1;1076,20160602,21,22,24,30,31,43,19;1077,20160606,1,4,9,23,30,36,5;1078,20160609,3,12,20,33,35,41,34;1079,20160613,8,12,19,24,30,36,42;1080,20160616,6,15,16,19,38,41,23;1081,20160620,6,8,13,17,18,20,28;1082,20160623,9,12,19,21,39,40,16;1083,20160627,10,13,15,18,25,38,20;1084,20160630,1,7,20,28,34,38,16;1085,20160704,3,20,21,30,34,35,23;1086,20160707,3,7,9,31,38,43,29;1087,20160711,10,13,26,27,30,36,6;1088,20160714,5,8,16,24,32,33,22;1089,20160718,5,17,19,22,41,42,4;1090,20160721,3,10,15,22,27,40,23;1091,20160725,21,22,24,26,28,30,38;1092,20160728,2,11,18,27,30,33,14;1093,20160801,4,19,26,40,42,43,9;1094,20160804,6,7,20,24,28,43,11;1095,20160808,3,6,15,18,23,27,38;1096,20160811,6,19,21,31,38,41,40;1097,20160815,1,5,8,14,19,21,4;1098,20160818,1,19,31,33,35,43,29;1099,20160822,6,8,12,17,18,24,35;1100,20160825,2,6,16,23,32,35,37;1101,20160829,4,5,7,10,13,16,1;1102,20160901,3,6,9,13,36,37,32;1103,20160905,8,13,14,18,24,38,25;1104,20160908,15,25,32,33,36,38,40;1105,20160912,12,15,25,31,39,40,26;1106,20160915,1,4,8,10,18,33,15;1107,20160919,6,7,12,22,30,33,36;1108,20160922,12,25,29,32,38,43,35;1109,20160926,6,8,14,27,36,42,28;1110,20160929,1,6,21,34,36,39,29;1111,20161003,6,16,17,27,33,41,42;1112,20161006,6,9,15,19,39,42,34;1113,20161010,1,12,14,26,34,41,6;1114,20161013,2,7,9,28,38,39,26;1115,20161017,3,10,12,26,38,42,4;1116,20161020,1,11,33,34,35,38,29;1117,20161024,2,6,7,9,19,23,21;1118,20161027,1,11,21,25,34,36,28;1119,20161031,3,6,15,21,42,43,11;1120,20161103,10,12,13,29,35,39,33;1121,20161107,2,8,31,38,40,42,41;1122,20161110,22,24,29,31,32,34,40;1123,20161114,4,8,23,29,34,35,15;1124,20161117,1,16,24,28,40,42,33;1125,20161121,2,16,19,20,24,36,27;1126,20161124,4,5,26,30,34,42,27;1127,20161128,9,15,17,21,23,42,24;1128,20161201,3,15,21,29,30,35,39;1129,20161205,6,11,19,28,30,43,32;1130,20161208,1,11,37,38,39,42,26;1131,20161212,6,12,25,36,38,41,18;1132,20161215,4,5,24,29,33,35,40;1133,20161219,3,18,19,20,37,38,9;1134,20161222,5,6,12,14,30,38,29;1135,20161226,20,22,28,29,32,41,14;1136,20161229,3,4,7,8,22,33,18;1137,20170105,1,18,21,31,37,41,20;1138,20170109,8,15,21,24,35,38,22;1139,20170112,4,6,14,17,23,33,26;1140,20170116,11,21,30,31,36,37,23;1141,20170119,1,4,10,14,24,26,29;1142,20170123,12,13,19,23,28,35,31;1143,20170126,19,21,31,39,42,43,29;1144,20170130,7,13,14,33,39,43,29;1145,20170202,1,4,15,18,25,28,36;1146,20170206,1,10,19,23,26,34,27;1147,20170209,2,3,10,16,26,27,23;1148,20170213,3,5,16,23,31,43,39;1149,20170216,2,14,22,23,35,43,31;1150,20170220,7,11,17,27,32,40,18;1151,20170223,5,23,25,26,29,31,19;1152,20170227,6,8,10,33,35,43,22;1153,20170302,4,15,20,24,26,30,29;1154,20170306,8,12,30,36,41,42,4;1155,20170309,14,19,22,23,28,43,25;1156,20170313,3,6,19,31,35,40,12;1157,20170316,5,17,20,28,39,42,1;1158,20170320,22,24,27,30,32,40,23;1159,20170323,1,4,15,16,23,30,17;1160,20170327,9,22,31,32,34,43,24;1161,20170330,1,2,12,16,19,40,18;1162,20170403,3,4,8,12,24,37,10;1163,20170406,11,17,19,24,33,41,9;1164,20170410,4,7,11,33,34,37,24;1165,20170413,18,20,21,24,40,42,25;1166,20170417,4,8,17,20,29,41,3;1167,20170420,6,13,20,25,36,42,28;1168,20170424,1,3,8,14,35,39,18;1169,20170427,19,24,25,36,37,43,10;1170,20170501,1,8,13,19,23,28,39;1171,20170504,9,10,13,21,34,36,40;1172,20170508,3,10,31,32,38,39,15;1173,20170511,5,7,11,16,33,38,25;1174,20170515,7,8,9,25,29,31,28;1175,20170518,2,4,6,21,27,37,10;1176,20170522,2,9,18,23,29,32,34;1177,20170525,2,5,21,22,23,38,36;1178,20170529,16,17,20,22,29,40,31;1179,20170601,5,12,27,36,39,40,37;1180,20170605,2,4,5,13,18,21,40;1181,20170608,15,16,17,29,31,32,12;1182,20170612,5,6,10,13,24,33,40;1183,20170615,2,19,22,25,32,36,39;1184,20170619,2,6,21,30,31,36,41;1185,20170622,6,15,18,26,27,31,38;1186,20170626,8,10,20,25,38,43,39;1187,20170629,3,13,18,20,24,31,37;1188,20170703,3,9,19,20,23,30,14;1189,20170706,8,24,28,30,38,41,32;1190,20170710,1,3,13,29,38,39,8;1191,20170713,3,5,11,20,25,32,30;1192,20170717,15,17,18,22,30,39,28;1193,20170720,1,2,7,8,10,42,28;1194,20170724,12,18,20,23,33,40,1;1195,20170727,1,4,17,22,35,42,7;1196,20170731,6,7,19,31,39,41,14;1197,20170803,3,24,28,36,37,39,27;1198,20170807,1,14,20,26,27,34,33;1199,20170810,9,10,11,20,28,40,17;1200,20170814,2,8,10,12,31,42,21;1201,20170817,1,15,19,22,26,28,33;1202,20170821,9,12,15,19,26,39,28;1203,20170824,2,4,6,37,39,42,41;1204,20170828,10,20,21,24,39,43,17;1205,20170831,12,25,26,32,35,42,2;1206,20170904,11,19,20,26,32,33,22;1207,20170907,6,16,17,20,22,43,34;1208,20170911,5,14,20,30,38,41,8;1209,20170914,11,12,24,32,38,40,7;1210,20170918,5,6,12,16,23,36,9;1211,20170921,3,8,24,25,26,28,43;1212,20170925,2,16,27,35,40,42,25;1213,20170928,3,13,22,26,30,39,1;1214,20171002,2,19,23,30,33,36,40;1215,20171005,3,6,9,15,21,42,7;1216,20171009,8,14,25,39,42,43,37;1217,20171012,14,16,17,34,36,41,25;1218,20171016,5,8,13,20,28,42,35;1219,20171019,14,22,24,36,39,42,32;1220,20171023,9,15,21,23,32,42,14;1221,20171026,3,10,11,31,33,36,21;1222,20171030,1,5,7,11,29,39,40;1223,20171102,12,22,28,30,36,43,34;1224,20171106,5,18,33,38,41,43,6;1225,20171109,19,22,25,30,33,34,36;1226,20171113,7,8,28,34,37,41,13;1227,20171116,1,8,14,28,40,43,6;1228,20171120,6,18,19,25,28,40,3;1229,20171123,10,28,35,37,39,43,16;1230,20171127,1,2,6,9,17,38,34;1231,20171130,1,14,16,24,32,36,2;1232,20171204,5,10,14,31,35,38,16;1233,20171207,2,7,12,21,29,33,16;1234,20171211,7,11,16,20,30,40,28;1235,20171214,8,17,24,34,36,42,33;1236,20171218,1,3,11,26,38,39,34;1237,20171221,1,4,6,35,38,40,27;1238,20171225,8,14,28,29,33,40,32;1239,20171228,2,19,27,28,30,38,22;1240,20180104,15,18,22,36,37,39,26;1241,20180108,4,7,15,17,23,25,8;1242,20180111,12,22,28,34,37,42,33;1243,20180115,23,24,32,37,41,42,29;1244,20180118,10,15,17,18,20,41,35;1245,20180122,13,15,27,30,31,39,8;1246,20180125,4,10,11,23,36,37,34;1247,20180129,4,7,17,18,26,36,35;1248,20180201,2,6,14,28,34,37,3;1249,20180205,5,8,15,20,25,27,6;1250,20180208,3,10,18,22,23,40,27;1251,20180212,21,28,31,33,34,40,23;1252,20180215,4,15,18,19,22,29,37;1253,20180219,1,12,14,24,33,37,15;1254,20180222,7,8,11,15,36,39,37;1255,20180226,2,14,15,27,40,43,41;1256,20180301,2,5,16,32,35,41,25;1257,20180305,1,11,19,23,32,37,14;1258,20180308,8,14,20,25,31,41,35;1259,20180312,10,16,20,26,33,36,41;1260,20180315,3,8,16,19,25,26,32;1261,20180319,9,20,26,29,30,34,42;1262,20180322,4,11,15,20,24,43,10;1263,20180326,3,8,13,14,31,37,6;1264,20180329,1,6,27,33,35,43,15;1265,20180402,5,20,26,27,28,33,12;1266,20180405,3,12,16,23,25,28,17;1267,20180409,4,18,31,33,34,41,9;1268,20180412,8,11,15,22,35,36,30;1269,20180416,9,10,11,33,39,42,25;1270,20180419,9,10,24,30,35,40,38;1271,20180423,1,11,14,27,39,42,32;1272,20180426,4,9,13,32,37,38,42;1273,20180430,18,20,22,26,34,37,4;1274,20180503,3,15,18,23,31,37,34;1275,20180507,7,19,21,28,40,41,3;1276,20180510,5,6,9,11,16,35,22;1277,20180514,12,16,20,22,31,43,33;1278,20180517,3,4,18,28,34,36,6;1279,20180521,4,10,16,17,20,24,31;1280,20180524,1,9,11,21,29,36,7;1281,20180528,3,7,9,15,29,40,17;1282,20180531,1,4,10,11,24,28,29;1283,20180604,1,26,27,30,37,38,4;1284,20180607,4,14,17,21,24,39,7;1285,20180611,7,8,13,36,38,42,6;1286,20180614,11,32,37,39,41,42,43;1287,20180618,9,21,23,34,37,38,40;1288,20180621,8,9,19,24,35,43,11;1289,20180625,6,9,16,24,29,37,3;1290,20180628,18,24,27,32,35,41,10;1291,20180702,2,6,8,12,13,17,1;1292,20180705,1,18,29,30,31,37,35;1293,20180709,2,5,15,27,30,35,11;1294,20180712,7,14,18,26,28,39,2;1295,20180716,14,23,31,37,39,43,32;1296,20180719,5,11,15,16,23,32,4;1297,20180723,1,2,7,29,34,42,41;1298,20180726,4,6,15,22,30,42,7;1299,20180730,3,12,24,28,38,39,10;1300,20180802,3,18,25,26,32,33,27;1301,20180806,6,7,9,16,30,41,22;1302,20180809,4,7,25,30,34,43,38;1303,20180813,7,10,24,33,35,42,43;1304,20180816,6,25,30,38,40,42,17;1305,20180820,4,6,19,36,38,40,28;1306,20180823,7,11,23,36,38,41,37;1307,20180827,6,25,27,28,30,43,14;1308,20180830,6,9,10,15,34,39,3;1309,20180903,24,32,34,36,41,43,23;1310,20180906,9,24,25,27,34,36,14;1311,20180910,12,23,26,29,36,37,15;1312,20180913,13,24,25,26,32,39,6;1313,20180917,5,12,21,31,36,43,27;1314,20180920,3,10,20,21,27,33,39;1315,20180924,3,8,23,30,32,40,31;1316,20180927,6,16,26,35,36,39,14;1317,20181001,6,10,13,19,32,43,22;1318,20181004,2,3,7,14,19,41,34;1319,20181008,9,10,19,21,28,30,43;1320,20181011,4,6,12,16,17,34,28;1321,20181015,10,24,31,40,41,43,33;1322,20181018,2,3,13,28,32,37,7;1323,20181022,5,6,10,24,29,40,26;1324,20181025,1,7,8,17,25,42,11;1325,20181029,8,18,23,26,33,38,34;1326,20181101,2,3,9,12,30,41,21;1327,20181105,2,3,13,22,23,30,27;1328,20181108,7,9,23,32,37,40,41;1329,20181112,11,15,18,22,37,42,31;1330,20181115,2,19,24,32,36,43,30;1331,20181119,2,14,30,31,38,39,26;1332,20181122,5,15,18,22,33,40,6;1333,20181126,2,9,15,22,26,35,5;1334,20181129,1,2,7,14,29,43,40;1335,20181203,10,16,19,34,35,39,4;1336,20181206,4,5,11,19,31,34,43;1337,20181210,3,6,21,28,29,34,15;1338,20181213,2,6,23,25,30,31,35;1339,20181217,1,10,15,33,34,42,39;1340,20181220,6,15,18,20,26,29,9;1341,20181224,9,12,15,16,26,39,34;1342,20181227,1,4,9,16,23,31,42;1343,20190107,2,8,10,12,19,23,16;1344,20190110,8,16,20,28,37,43,29;1345,20190114,1,15,26,27,29,33,18;1346,20190117,5,10,22,27,38,42,36;1347,20190121,8,10,11,18,36,43,7;1348,20190124,1,2,14,19,21,33,43;1349,20190128,2,16,19,32,34,42,33;1350,20190131,7,8,9,10,20,38,16;1351,20190204,8,14,18,22,28,29,5;1352,20190207,5,6,9,15,19,36,22;1353,20190211,2,11,12,19,21,24,36;1354,20190214,4,25,27,28,32,41,26;1355,20190218,5,15,27,29,34,37,12;1356,20190221,4,6,10,16,24,43,12;1357,20190225,2,3,8,15,19,28,21;1358,20190228,9,15,23,27,29,40,28;1359,20190304,6,8,14,18,25,41,9;1360,20190307,4,9,10,16,17,42,23;1361,20190311,3,4,12,18,28,38,32;1362,20190314,8,16,19,28,36,39,1;1363,20190318,2,5,23,36,37,41,43;1364,20190321,5,13,14,16,25,27,3;1365,20190325,4,7,14,20,31,41,32;1366,20190328,14,15,17,29,31,39,10;1367,20190401,3,8,11,14,22,41,34;1368,20190404,6,11,17,20,34,35,10;1369,20190408,12,15,25,32,41,43,7;1370,20190411,8,22,24,30,40,41,2;1371,20190415,4,5,6,7,24,28,30;1372,20190418,3,5,10,21,33,39,8;1373,20190422,1,10,13,18,20,41,11;1374,20190425,1,4,5,19,23,35,36;1375,20190429,2,5,21,22,31,38,28;1376,20190502,2,5,22,31,32,43,27;1377,20190506,1,7,13,24,40,43,20;1378,20190509,1,10,15,24,35,43,9;1379,20190513,1,2,19,21,24,37,32;1380,20190516,1,3,24,26,29,33,42;1381,20190520,2,4,5,16,19,38,25;1382,20190523,8,9,12,25,26,28,32;1383,20190527,2,4,9,15,18,39,24;1384,20190530,3,6,13,32,38,43,40;1385,20190603,9,20,28,35,41,43,23;1386,20190606,4,11,14,15,20,38,35;1387,20190610,11,27,29,30,37,38,33;1388,20190613,9,10,12,15,29,37,11;1389,20190617,6,16,21,23,26,42,43;1390,20190620,10,11,13,28,34,39,35;1391,20190624,3,12,23,31,36,42,43;1392,20190627,6,9,12,19,40,42,7;1393,20190701,7,11,26,32,42,43,24;1394,20190704,8,9,35,36,42,43,22;1395,20190708,5,16,18,27,30,43,25;1396,20190711,3,7,11,15,23,41,21;1397,20190715,9,18,19,21,25,26,7;1398,20190718,23,29,34,35,40,43,42;1399,20190722,7,20,21,33,41,43,8;1400,20190725,8,10,26,31,34,39,36;1401,20190729,2,13,23,24,25,33,36;1402,20190801,10,24,26,33,36,42,28;1403,20190805,1,3,10,27,34,41,22;1404,20190808,2,17,29,37,38,39,5;1405,20190812,3,4,6,19,23,24,42;1406,20190815,20,24,27,29,34,35,43;1407,20190819,10,13,19,28,33,39,15;1408,20190822,2,17,24,26,34,43,32;1409,20190826,5,6,8,20,22,25,13;1410,20190829,8,14,17,25,36,41,23;1411,20190902,2,5,7,20,25,28,3;1412,20190905,2,19,24,25,32,42,8;1413,20190909,7,13,17,21,24,26,12;1414,20190912,12,19,21,26,40,41,20;1415,20190916,1,3,7,34,39,40,33;1416,20190919,2,9,10,15,24,36,13;1417,20190923,3,10,25,26,27,31,5;1418,20190926,4,21,32,35,42,43,15;1419,20190930,5,10,11,12,21,37,41;1420,20191003,1,2,14,16,22,28,4;1421,20191007,2,14,20,23,37,43,30;1422,20191010,12,14,17,20,24,30,39;1423,20191014,11,24,29,36,37,42,13;1424,20191017,6,7,25,26,33,36,19;1425,20191021,1,24,28,33,35,42,27;1426,20191024,4,13,17,19,30,43,24;1427,20191028,1,7,25,26,38,41,31;1428,20191031,16,18,19,34,35,36,6;1429,20191104,4,8,13,18,21,23,22;1430,20191107,4,7,9,12,20,28,3;1431,20191111,2,27,28,33,38,40,30;1432,20191114,4,5,15,32,33,43,13;1433,20191118,3,5,12,16,38,42,6;1434,20191121,2,20,30,38,39,40,4;1435,20191125,2,4,16,21,22,40,9;1436,20191128,3,7,17,18,30,36,33;1437,20191202,3,11,24,25,37,40,14;1438,20191205,2,5,6,20,33,38,22;1439,20191209,11,17,23,28,34,41,4;1440,20191212,1,7,20,31,41,42,28;1441,20191216,12,22,24,33,35,42,36;1442,20191219,12,21,35,36,40,43,39;1443,20191223,2,4,8,10,22,33,28;1444,20191226,11,20,24,25,30,37,14;1445,20191230,3,14,24,29,30,42,21;1446,20200109,2,5,11,20,21,32,13;1447,20200113,2,9,12,13,14,22,10;1448,20200116,10,12,25,29,32,41,40;1449,20200120,6,19,20,26,34,38,4;1450,20200123,24,25,26,27,34,36,3;1451,20200127,2,6,10,20,24,43,34;1452,20200130,17,19,29,31,37,39,35;1453,20200203,10,22,26,27,28,41,39;1454,20200206,3,15,19,34,37,40,41;1455,20200210,1,10,12,22,34,43,23;1456,20200213,2,18,19,24,29,31,33;1457,20200217,1,3,11,17,20,37,29;1458,20200220,4,16,19,22,26,29,6;1459,20200224,2,17,19,24,28,29,7;1460,20200227,3,6,10,15,29,30,4;1461,20200302,5,7,8,18,22,26,24;1462,20200305,4,18,19,28,33,36,9;1463,20200309,18,29,32,34,35,39,36;1464,20200312,8,13,14,18,29,31,23;1465,20200316,11,15,16,24,28,38,3;1466,20200319,6,10,15,18,32,40,35;1467,20200323,3,14,16,25,26,38,7;1468,20200326,4,8,15,24,25,31,26;1469,20200330,4,9,10,13,24,27,22;1470,20200402,4,8,14,16,39,40,23;1471,20200406,1,3,8,32,37,43,24;1472,20200409,1,6,7,9,23,40,43;1473,20200413,1,5,6,27,33,38,11;1474,20200416,4,6,8,22,27,32,26;1475,20200420,6,7,9,20,21,27,2;1476,20200423,6,22,38,40,41,42,35;1477,20200427,4,13,14,25,27,32,1;1478,20200430,7,12,15,21,40,42,32;1479,20200504,1,20,30,32,35,37,33;1480,20200507,2,4,5,6,24,34,39;1481,20200511,3,9,21,31,41,42,18;1482,20200514,8,26,28,32,41,43,14;1483,20200518,3,10,20,23,29,43,22;1484,20200521,4,12,17,18,23,41,28;1485,20200525,9,10,18,27,28,35,37;1486,20200528,18,24,29,33,39,42,34;1487,20200601,5,7,9,17,24,35,36;1488,20200604,4,10,11,17,34,37,38;1489,20200608,4,6,11,13,23,32,1;1490,20200611,7,19,24,29,39,43,11;1491,20200615,8,11,23,31,34,37,1;1492,20200618,4,16,18,32,38,42,36;1493,20200622,11,18,24,27,37,38,15;1494,20200625,8,15,17,24,26,38,27;1495,20200629,18,24,32,34,37,41,22;1496,20200702,5,9,13,16,17,34,37;1497,20200706,6,22,28,30,35,37,8;1498,20200709,1,6,7,9,31,37,43;1499,20200713,10,11,27,28,29,37,13;1500,20200716,19,21,22,28,29,30,4;1501,20200720,6,10,13,25,31,38,15;1502,20200723,1,17,25,28,32,42,26;1503,20200727,1,8,16,35,40,42,20;1504,20200730,5,7,9,21,42,43,35;1505,20200803,1,2,14,15,21,34,19;1506,20200806,10,12,19,28,35,41,39;1507,20200810,19,20,22,30,35,43,29;1508,20200813,9,13,28,29,32,40,41;1509,20200817,6,11,12,34,36,41,43;1510,20200820,8,13,17,18,21,38,23;1511,20200824,11,16,22,24,38,40,6;1512,20200827,1,11,12,24,32,38,39;1513,20200831,13,14,18,19,25,42,5;1514,20200903,11,16,22,29,37,43,14;1515,20200907,5,9,17,21,27,29,30;1516,20200910,25,32,34,37,41,42,28;1517,20200914,14,25,27,30,39,41,8;1518,20200917,6,15,16,22,36,41,20;1519,20200921,5,8,20,21,27,43,9;1520,20200924,1,6,11,13,30,33,4;1521,20200928,17,21,22,40,41,42,13;1522,20201001,5,17,21,22,32,35,41;1523,20201005,2,15,17,25,34,38,27;1524,20201008,2,3,15,24,30,43,39;1525,20201012,3,7,20,21,28,32,24;1526,20201015,4,17,19,21,39,41,36;1527,20201019,2,5,9,11,27,32,33;1528,20201022,1,14,17,34,35,37,16;1529,20201026,3,19,26,28,33,40,1;1530,20201029,2,5,10,34,37,40,7;1531,20201102,2,6,7,10,30,33,14;1532,20201105,2,9,14,16,17,21,34;1533,20201109,15,22,27,37,38,41,5;1534,20201112,1,9,18,22,24,43,39;1535,20201116,1,9,14,30,35,38,32;1536,20201119,2,5,9,30,37,40,28;1537,20201123,6,13,14,32,33,37,20;1538,20201126,8,14,19,33,35,40,38;1539,20201130,13,29,33,37,41,42,43;1540,20201203,1,20,25,28,33,37,31;1541,20201207,12,26,28,32,33,35,41;1542,20201210,11,12,16,17,20,36,18;1543,20201214,17,21,26,33,36,38,34;1544,20201217,3,11,25,26,39,42,34;1545,20201221,8,14,15,26,37,43,12;1546,20201224,1,18,19,24,31,40,16;1547,20201228,4,11,14,17,22,39,21;1548,20210104,18,24,26,35,39,42,32;1549,20210107,4,5,27,28,35,41,33;1550,20210111,8,11,22,32,37,42,41;1551,20210114,3,14,18,24,38,43,23;1552,20210118,5,9,15,30,32,39,11;1553,20210121,7,8,16,32,41,42,31;1554,20210125,6,14,16,27,40,42,26;1555,20210128,2,8,17,23,24,27,5;1556,20210201,10,19,28,30,38,42,18;1557,20210204,5,21,22,23,26,39,31;1558,20210208,1,12,25,27,39,42,16;1559,20210211,4,15,17,20,26,31,43;1560,20210215,7,19,24,32,40,42,22;1561,20210218,12,15,26,34,35,38,7;1562,20210222,2,4,15,16,26,33,25;1563,20210225,1,12,20,26,35,37,2;1564,20210301,5,6,18,20,27,37,7;1565,20210304,5,9,17,28,30,37,27;1566,20210308,12,13,20,24,30,35,34;1567,20210311,5,7,19,26,37,40,34;1568,20210315,2,5,7,10,16,34,14;1569,20210318,2,8,29,31,32,33,16;1570,20210322,1,19,22,23,31,36,24;1571,20210325,1,2,5,25,40,41,26;1572,20210329,4,6,10,19,28,38,40;1573,20210401,2,10,16,38,39,43,11;1574,20210405,1,2,3,20,31,32,13;1575,20210408,2,8,15,24,32,39,9;1576,20210412,5,7,10,17,29,32,37;1577,20210415,13,14,15,28,37,39,4;1578,20210419,3,15,17,19,21,34,4;1579,20210422,23,29,32,33,37,42,1;1580,20210426,5,7,11,12,24,31,3;1581,20210429,6,12,30,31,41,43,1;1582,20210503,18,32,35,36,39,41,28;1583,20210506,5,7,16,34,39,41,29;1584,20210510,13,15,18,30,37,43,9;1585,20210513,2,6,10,13,16,32,9;1586,20210517,2,13,19,27,40,42,14;1587,20210520,16,21,22,27,36,43,37;1588,20210524,6,16,27,31,32,34,11;1589,20210527,11,21,25,31,36,39,32;1590,20210531,10,12,15,29,33,42,17;1591,20210603,7,9,18,21,26,43,14;1592,20210607,4,16,25,30,36,43,19;1593,20210610,6,17,18,35,37,38,16;1594,20210614,1,5,6,13,34,36,18;1595,20210617,16,21,30,32,40,43,15;1596,20210621,10,15,30,35,42,43,26;1597,20210624,2,3,8,17,23,32,12;1598,20210628,9,11,26,28,39,43,1;1599,20210701,1,2,20,22,35,38,4;1600,20210705,7,14,22,35,37,39,24;1601,20210708,6,13,17,18,21,41,37;1602,20210712,1,2,7,14,32,42,33;1603,20210715,4,6,32,35,40,42,26;1604,20210719,12,21,23,36,37,38,6;1605,20210722,2,5,8,20,29,40,6;1606,20210726,18,23,25,26,32,34,43;1607,20210729,10,13,14,15,17,22,40;1608,20210802,10,18,22,23,25,35,19;1609,20210805,4,12,16,34,35,41,5;1610,20210809,1,8,13,22,41,42,40;1611,20210812,3,14,16,24,32,36,34;1612,20210816,5,8,12,16,27,38,42;1613,20210819,9,17,22,25,30,41,15;1614,20210823,4,5,20,29,40,43,24;1615,20210826,2,5,6,13,19,29,25;1616,20210830,1,4,6,21,34,41,12;1617,20210902,2,19,21,24,26,41,23;1618,20210906,2,10,14,17,37,43,38;1619,20210909,3,5,17,20,24,38,13;1620,20210913,7,15,19,24,25,28,11;1621,20210916,3,10,22,23,26,39,1;1622,20210920,16,29,34,35,40,41,26;1623,20210923,7,12,15,17,19,29,22;1624,20210927,3,5,17,25,33,39,19;1625,20210930,1,4,8,11,30,42,9;1626,20211004,9,11,19,23,30,43,27;1627,20211007,21,22,23,26,36,38,13;1628,20211011,1,3,10,12,26,42,13;1629,20211014,19,23,30,31,32,40,13;1630,20211018,10,11,24,33,34,36,42;1631,20211021,7,15,23,26,30,35,36;1632,20211025,1,9,24,28,31,41,2;1633,20211028,3,7,9,26,35,36,28;1634,20211101,18,19,20,23,29,35,17;1635,20211104,4,8,19,32,36,43,30;1636,20211108,1,12,24,26,30,36,29;1637,20211111,2,3,11,16,27,36,29;1638,20211115,21,25,26,35,39,40,18;1639,20211118,5,9,13,20,26,32,28;1640,20211122,8,9,19,21,27,30,17;1641,20211125,2,5,7,12,16,20,33;1642,20211129,5,15,16,24,34,39,13;1643,20211202,10,11,12,15,16,40,33;1644,20211206,1,9,14,28,32,40,15;1645,20211209,2,8,13,14,33,40,6;1646,20211213,3,19,21,29,39,43,25;1647,20211216,3,8,14,15,19,35,12;1648,20211220,2,3,22,26,35,42,38;1649,20211223,8,16,19,23,29,41,1;1650,20211227,1,3,15,33,39,43,30;1651,20211230,7,12,15,21,27,32,28;1652,20220106,8,15,16,23,38,43,2;1653,20220110,2,7,10,12,29,36,6;1654,20220113,9,10,14,21,22,33,26;1655,20220117,21,23,31,38,42,43,40;1656,20220120,11,12,14,28,36,38,37;1657,20220124,11,13,16,19,20,38,25;1658,20220127,10,11,19,29,30,36,37;1659,20220131,4,10,23,25,37,42,6;1660,20220203,3,13,29,35,42,43,15;1661,20220207,6,14,31,35,38,43,12;1662,20220210,4,17,18,25,26,27,32;1663,20220214,1,6,19,21,27,39,3;1664,20220217,7,10,17,20,21,27,15;1665,20220221,19,22,24,29,34,41,9;1666,20220224,14,16,26,37,41,43,31;1667,20220228,5,8,18,25,40,43,17;1668,20220303,5,16,21,24,31,34,29;1669,20220307,2,4,13,14,22,29,26;1670,20220310,1,16,20,23,32,37,18;1671,20220314,16,27,37,38,39,43,10;1672,20220317,6,17,22,27,37,42,34;1673,20220321,24,33,35,36,41,43,21;1674,20220324,14,19,25,29,33,43,31;1675,20220328,2,3,17,27,28,34,6;1676,20220331,5,13,21,27,31,36,11;1677,20220404,11,20,26,31,34,38,32;1678,20220407,3,15,17,21,22,23,13;1679,20220411,10,12,13,21,31,41,27;1680,20220414,4,19,29,32,35,42,25;1681,20220418,1,7,11,13,15,42,33;1682,20220421,6,9,10,21,33,41,14;1683,20220425,6,15,28,30,32,43,21;1684,20220428,5,10,26,30,34,40,31;1685,20220502,1,26,27,28,33,37,8;1686,20220505,7,8,9,23,25,41,11;1687,20220509,20,21,23,26,29,35,22;1688,20220512,2,4,10,24,34,42,8;1689,20220516,4,7,21,22,34,42,31;1690,20220519,8,16,21,23,29,37,38;1691,20220523,13,16,18,29,33,41,26;1692,20220526,4,8,17,31,37,42,14;1693,20220530,7,8,21,23,34,36,11;1694,20220602,2,12,14,26,32,37,29;1695,20220606,3,8,14,18,28,37,39;1696,20220609,2,4,13,18,32,35,12;1697,20220613,2,3,11,12,22,35,26;1698,20220616,6,16,18,33,42,43,11;1699,20220620,4,6,16,27,39,42,1;1700,20220623,11,19,20,27,31,35,6;1701,20220627,5,8,27,30,33,39,10;1702,20220630,2,6,7,18,27,38,14;1703,20220704,14,22,23,30,33,38,18;1704,20220707,1,5,18,26,39,40,31;1705,20220711,3,6,9,28,37,41,5;1706,20220714,13,15,32,35,37,38,25;1707,20220718,14,16,28,34,35,36,26;1708,20220721,1,20,29,35,40,41,16;1709,20220725,3,4,7,20,22,41,5;1710,20220728,1,2,21,27,32,37,14;1711,20220801,3,32,33,34,35,40,5;1712,20220804,1,5,15,24,25,28,14;1713,20220808,6,32,38,39,40,42,37;1714,20220811,11,15,20,26,33,42,16;1715,20220815,2,6,15,16,32,37,25;1716,20220818,2,26,27,32,38,42,9;1717,20220822,15,21,23,24,33,36,40;1718,20220825,1,6,9,15,18,38,10;1719,20220829,4,11,15,16,35,39,36;1720,20220901,1,5,18,25,32,38,20;1721,20220905,7,8,14,17,22,39,30;1722,20220908,2,5,30,33,36,42,28;1723,20220912,6,10,15,16,30,38,26;1724,20220915,6,9,24,26,33,37,16;1725,20220919,2,10,16,17,20,28,1;1726,20220922,9,14,16,21,27,43,26;1727,20220926,3,13,16,22,33,42,15;1728,20220929,4,8,14,18,26,38,3;1729,20221003,11,15,24,25,28,31,9;1730,20221006,4,8,16,21,22,26,23;1731,20221010,3,7,19,21,32,35,6;1732,20221013,3,18,19,34,38,42,14;1733,20221017,22,24,25,27,29,39,7;1734,20221020,5,6,11,19,28,35,42;1735,20221024,1,21,24,33,40,41,12;1736,20221027,6,9,25,26,27,32,11;1737,20221031,12,14,22,24,29,33,3;1738,20221103,7,12,20,31,33,43,14;1739,20221107,1,7,12,36,37,39,41;1740,20221110,14,21,24,27,31,38,5;1741,20221114,4,14,17,19,22,42,6;1742,20221117,16,20,22,29,33,40,25;1743,20221121,3,17,18,19,20,42,9;1744,20221124,1,8,21,25,26,35,20;1745,20221128,7,9,10,21,39,40,32;1746,20221201,3,11,14,22,27,32,31;1747,20221205,1,9,11,14,15,40,32;1748,20221208,8,11,23,28,36,39,6;1749,20221212,1,4,13,17,31,34,18;1750,20221215,3,15,18,21,34,40,1;1751,20221219,1,12,21,24,29,42,32;1752,20221222,2,5,15,20,22,36,8;1753,20221226,1,2,4,9,22,25,38;1754,20221229,3,6,7,19,35,39,21;1755,20230105,4,11,13,26,27,36,15;1756,20230109,19,25,29,36,37,41,2;1757,20230112,6,12,15,35,36,39,42;1758,20230116,7,14,28,32,42,43,17;1759,20230119,1,10,25,27,28,33,15;1760,20230123,8,14,18,38,39,42,30;1761,20230126,5,7,13,21,23,30,42;1762,20230130,1,6,7,20,37,40,10;1763,20230202,2,6,20,30,31,41,11;1764,20230206,16,21,26,31,39,42,41;1765,20230209,1,10,15,19,20,32,6;1766,20230213,16,19,25,26,35,43,38;1767,20230216,7,15,17,21,32,35,43;1768,20230220,6,21,30,32,39,40,34;1769,20230223,4,11,15,19,28,32,34;1770,20230227,1,11,18,24,37,43,28;1771,20230302,3,6,12,16,31,42,40;1772,20230306,5,21,22,30,32,36,16;1773,20230309,12,21,22,27,31,32,20;1774,20230313,17,18,26,30,36,40,3;1775,20230316,4,5,9,26,27,29,43;1776,20230320,5,11,18,25,33,38,32;1777,20230323,5,16,19,21,30,35,11;1778,20230327,9,19,24,25,26,39,34;1779,20230330,11,13,20,33,35,40,34;1780,20230403,1,5,19,26,35,37,32;1781,20230406,10,18,32,39,41,42,12;1782,20230410,7,31,32,36,39,42,34;1783,20230413,5,14,19,23,30,42,35;1784,20230417,3,19,30,32,36,40,42;1785,20230420,4,11,24,35,37,42,7;1786,20230424,2,5,6,26,33,35,13;1787,20230427,2,13,17,19,41,43,1;1788,20230501,3,14,16,19,26,39,9;1789,20230504,6,9,16,26,29,34,36;1790,20230508,6,14,18,22,29,30,36;1791,20230511,8,9,18,19,30,36,17;1792,20230515,1,4,16,31,32,41,30;1793,20230518,1,6,14,15,23,24,42;1794,20230522,24,29,32,35,36,40,39;1795,20230525,26,30,31,35,41,43,5;1796,20230529,2,5,15,16,23,26,32;1797,20230601,15,23,26,34,41,43,32;1798,20230605,4,5,19,32,34,37,41;1799,20230608,11,18,34,40,41,42,14;1800,20230612,6,12,13,15,17,41,27;1801,20230615,18,25,26,37,39,43,21;1802,20230619,1,9,34,35,39,42,33;1803,20230622,9,16,18,19,39,41,3;1804,20230626,12,14,18,25,36,42,26;1805,20230629,4,22,27,31,32,40,35;1806,20230703,11,30,35,38,40,43,12;1807,20230706,1,2,8,9,10,20,25;1808,20230710,2,10,27,38,40,41,11;1809,20230713,2,5,10,22,24,42,7;1810,20230717,4,17,26,30,31,43,25;1811,20230720,2,4,6,13,20,38,33;1812,20230724,10,13,18,28,36,39,7;1813,20230727,5,22,26,34,39,42,12;1814,20230731,1,2,13,21,23,31,5;1815,20230803,3,8,10,25,26,29,32;1816,20230807,2,21,25,34,35,40,6;1817,20230810,6,24,30,33,37,38,7;1818,20230814,2,11,23,25,34,36,1;1819,20230817,5,8,18,20,24,34,29;1820,20230821,5,10,30,35,36,41,23;1821,20230824,9,11,12,14,27,38,34;1822,20230828,5,18,21,22,26,42,8;1823,20230831,4,10,18,25,34,38,40;1824,20230904,6,7,13,18,25,43,33;1825,20230907,1,10,13,17,20,41,4;1826,20230911,7,14,18,19,22,25,38;1827,20230914,1,13,18,23,38,41,36;1828,20230918,1,6,9,16,18,22,8;1829,20230921,12,15,16,17,28,42,32;1830,20230925,4,10,23,29,31,36,6;1831,20230928,1,14,17,27,32,43,42;1832,20231002,2,7,20,25,35,40,6;1833,20231005,7,13,34,37,42,43,38;1834,20231009,14,21,30,38,40,42,20;1835,20231012,11,20,23,24,31,33,1;1836,20231016,13,17,18,22,23,41,26;1837,20231019,16,17,27,34,38,42,20;1838,20231023,3,13,23,28,30,43,5;1839,20231026,2,5,26,32,34,40,21;1840,20231030,4,9,15,21,26,33,13;1841,20231102,8,11,15,31,33,38,30;1842,20231106,4,6,9,24,26,29,35;1843,20231109,4,5,10,19,26,37,3;1844,20231113,12,15,28,31,34,43,9;1845,20231116,10,22,25,30,31,39,28;1846,20231120,6,8,15,16,33,37,34;1847,20231123,18,22,25,35,36,39,43;1848,20231127,3,23,26,27,31,35,10;1849,20231130,11,15,17,33,36,41,6;1850,20231204,1,8,23,30,36,41,39;1851,20231207,8,9,10,16,17,39,4;1852,20231211,15,16,24,26,35,43,38;1853,20231214,11,13,24,26,28,34,17;1854,20231218,7,8,12,25,30,32,40;1855,20231221,21,24,26,30,31,38,3;1856,20231225,4,10,19,31,34,35,43;1857,20231228,11,16,20,23,38,41,33;1858,20240104,12,13,17,22,35,40,5;1859,20240108,1,4,11,28,37,39,15;1860,20240111,8,15,20,21,31,34,28;1861,20240115,2,12,13,27,39,40,30;1862,20240118,25,27,33,37,38,43,16;1863,20240122,15,20,24,37,38,39,27;1864,20240125,14,22,28,34,41,42,11;1865,20240129,3,5,18,21,26,36,34;1866,20240201,8,19,21,29,38,40,12;1867,20240205,1,6,17,28,40,42,4;1868,20240208,3,7,22,23,24,32,2;1869,20240212,7,8,16,28,36,37,29;1870,20240215,5,9,13,23,25,40,27;1871,20240219,7,13,22,24,38,42,14;1872,20240222,3,18,20,25,34,40,31;1873,20240226,6,15,26,33,39,41,42;1874,20240229,13,31,33,36,41,43,29;1875,20240304,11,15,16,24,38,39,29;1876,20240307,4,7,17,31,38,43,30;1877,20240311,1,11,13,16,21,37,6;1878,20240314,6,8,12,18,32,38,39;1879,20240318,1,8,14,27,29,37,6;1880,20240321,9,14,21,31,33,43,30;1881,20240325,2,9,22,31,33,35,30;1882,20240328,3,6,11,25,36,43,10;1883,20240401,3,11,24,25,28,32,5;1884,20240404,20,25,29,36,38,42,19;1885,20240408,2,6,7,16,17,41,32;1886,20240411,1,6,19,25,33,39,15;1887,20240415,5,7,15,18,36,37,20;1888,20240418,4,5,6,28,29,39,7;1889,20240422,7,15,21,27,28,32,24;1890,20240425,17,21,29,34,41,42,2;1891,20240429,2,16,23,38,40,43,33;1892,20240502,7,8,9,19,22,38,24;1893,20240506,25,31,33,35,37,42,16;1894,20240509,19,29,36,37,41,42,35;1895,20240513,6,18,29,33,35,40,1;1896,20240516,5,12,15,16,28,40,1;1897,20240520,7,23,27,30,34,36,28;1898,20240523,5,19,23,26,31,42,32;1899,20240527,2,4,9,19,33,36,3;1900,20240530,3,9,29,30,39,42,23;1901,20240603,14,15,26,28,33,37,4;1902,20240606,4,7,15,18,35,40,12;1903,20240610,18,19,23,25,27,32,20;1904,20240613,14,21,23,24,28,36,7;1905,20240617,4,5,17,20,29,30,40;1906,20240620,1,8,21,22,30,42,24;1907,20240624,10,14,21,23,24,40,28;1908,20240627,3,9,21,25,42,43,36;1909,20240701,3,5,7,8,22,27,28;1910,20240704,2,8,24,29,30,31,6;1911,20240708,4,8,9,14,16,41,15;1912,20240711,1,11,24,29,33,34,4;1913,20240715,2,5,22,23,29,33,17;1914,20240718,4,10,22,24,36,38,8;1915,20240722,4,10,14,19,24,40,15;1916,20240725,5,13,18,23,30,39,33;1917,20240729,3,12,14,29,30,33,21;1918,20240801,3,4,5,6,18,20,11;1919,20240805,5,17,19,21,38,41,6;1920,20240808,6,10,22,23,31,36,37;1921,20240812,1,2,13,25,33,41,31;1922,20240815,3,11,22,31,33,35,13;1923,20240819,6,7,18,30,34,37,3;1924,20240822,7,16,18,25,26,27,17;1925,20240826,5,9,11,18,34,37,22;1926,20240829,10,13,18,24,34,37,1;1927,20240902,2,11,18,26,32,36,10;1928,20240905,2,18,20,24,26,29,22;1929,20240909,7,10,12,20,40,43,4;1930,20240912,5,10,19,23,29,37,11;1931,20240916,9,23,27,30,33,41,4;1932,20240919,1,5,16,20,24,31,29;1933,20240923,3,7,9,10,12,30,16;1934,20240926,6,13,16,20,27,41,30;1935,20240930,3,8,12,14,17,40,2;1936,20241003,1,6,19,29,33,35,26;1937,20241007,1,9,26,28,31,38,8;1938,20241010,5,9,14,32,39,41,24;1939,20241014,10,22,26,27,29,37,41;1940,20241017,2,14,15,25,26,42,9;1941,20241021,2,12,13,21,23,43,39;1942,20241024,1,16,18,26,27,35,29;1943,20241028,10,11,17,25,34,38,9;1944,20241031,6,11,21,33,39,42,18;1945,20241104,1,2,4,14,27,43,41;1946,20241107,8,9,11,27,36,38,18;1947,20241111,10,24,30,36,37,41,5;1948,20241114,18,29,30,38,39,43,40;1949,20241118,12,13,17,28,37,43,27;1950,20241121,9,20,26,28,30,42,6;1951,20241125,1,3,6,23,28,35,14;1952,20241128,24,25,31,32,34,40,12;1953,20241202,19,23,29,33,36,40,27;1954,20241205,2,10,15,25,35,37,22;1955,20241209,11,19,26,28,29,36,1;1956,20241212,2,19,21,24,35,42,17;1957,20241216,3,4,5,13,34,42,18;1958,20241219,1,15,16,20,21,25,19;1959,20241223,19,20,36,40,41,43,22;1960,20241226,10,22,27,28,31,32,8;1961,20241230,11,12,27,28,38,43,10;1962,20250106,4,8,19,22,32,37,26;1963,20250109,3,4,20,29,35,38,6;1964,20250113,2,5,28,33,35,36,34;1965,20250116,17,18,20,23,33,43,19;1966,20250120,4,12,25,29,34,36,32;1967,20250123,3,4,22,26,29,35,37;1968,20250127,6,13,15,22,35,41,37;1969,20250130,3,7,12,13,35,38,24;1970,20250203,11,26,27,31,36,37,42;1971,20250206,2,6,9,26,32,36,23;1972,20250210,3,14,27,28,32,36,12;1973,20250213,7,10,14,27,28,32,4;1974,20250217,2,6,13,21,24,30,43;1975,20250220,11,13,15,20,35,42,19;1976,20250224,4,6,22,30,33,36,2;1977,20250227,4,14,20,28,29,34,30;1978,20250303,23,25,26,30,34,35,12;1979,20250306,15,18,19,21,37,40,17;1980,20250310,1,2,13,19,35,41,3;1981,20250313,5,10,15,17,29,41,30;1982,20250317,20,21,23,28,32,34,6;1983,20250320,3,18,31,36,37,40,23;1984,20250324,4,19,28,29,34,40,3;1985,20250327,1,30,36,37,41,43,33;1986,20250331,14,20,29,31,41,42,24;1987,20250403,8,12,25,28,32,42,27;1988,20250407,6,20,23,24,33,35,27;1989,20250410,15,17,23,29,35,43,8;1990,20250414,6,9,15,19,24,40,30;1991,20250417,1,5,12,16,17,40,4;1992,20250421,9,11,18,21,27,34,13;1993,20250424,7,12,13,35,37,42,31;1994,20250428,10,11,13,16,24,26,12;1995,20250501,2,4,8,26,27,37,19;1996,20250505,6,17,26,28,33,34,20;1997,20250508,5,16,17,28,36,40,14;1998,20250512,1,4,6,9,20,43,21;1999,20250515,17,31,34,35,36,38,2;2000,20250519,1,2,16,21,25,35,22;2001,20250522,13,21,24,26,34,36,20;2002,20250526,1,17,19,23,36,42,15;2003,20250529,1,5,10,13,35,40,39;2004,20250602,16,18,25,27,31,36,7;2005,20250605,3,7,18,27,33,34,6;2006,20250609,4,7,19,22,26,28,33;2007,20250612,6,18,23,24,30,35,38;2008,20250616,5,8,9,17,22,36,30;2009,20250619,8,17,20,35,36,40,12;2010,20250623,9,15,24,29,31,40,13;2011,20250626,12,14,18,24,30,42,4;2012,20250630,1,14,20,36,38,41,30;2013,20250703,7,12,30,31,39,43,42;2014,20250707,7,11,21,24,29,34,40;2015,20250710,6,8,13,16,20,23,26;2016,20250714,10,13,27,31,40,42,1;2017,20250717,2,4,11,22,24,35,8;2018,20250721,1,2,14,21,22,33,37;2019,20250724,7,13,14,21,39,42,9;2020,20250728,5,21,23,28,38,39,32;2021,20250731,2,17,22,29,30,43,31;2022,20250804,2,3,18,26,31,33,30;2023,20250807,1,20,28,29,31,43,5;2024,20250811,10,13,16,29,34,42,21;2025,20250814,12,18,26,28,41,43,35;2026,20250818,2,5,8,11,20,26,28;2027,20250821,5,12,18,23,34,39,13;2028,20250825,6,10,12,19,21,42,16;2029,20250828,7,21,31,36,40,43,41;2030,20250901,3,7,28,29,32,36,13;2031,20250904,2,3,16,20,23,29,27;2032,20250908,8,15,27,33,37,39,31;2033,20250911,5,16,21,22,33,35,26;2034,20250915,2,13,22,25,35,37,17;2035,20250918,5,10,12,17,21,35,9;2036,20250922,7,10,17,26,35,42,33;2037,20250925,7,12,20,23,27,29,10;2038,20250929,5,31,37,39,41,42,33;2039,20251002,2,15,25,27,38,42,22;2040,20251006,7,12,14,15,24,30,32;2041,20251009,4,19,22,24,32,38,11;2042,20251013,9,14,29,38,41,43,12;2043,20251016,11,19,22,34,40,42,31;2044,20251020,1,6,11,26,33,40,14;2045,20251023,1,4,7,12,16,28,19;2046,20251027,2,5,10,22,25,38,14;2047,20251030,10,11,16,19,37,39,27;2048,20251103,8,13,18,32,37,43,27;2049,20251106,10,24,25,39,40,42,19;2050,20251110,6,11,15,21,25,32,5;2051,20251113,3,15,27,28,31,39,20;2052,20251117,1,3,18,25,30,34,10;2053,20251120,20,28,31,35,37,41,13;2054,20251124,1,14,27,30,33,37,23;2055,20251127,11,12,14,17,21,26,2;2056,20251201,3,7,15,17,19,30,38;2057,20251204,5,7,21,22,38,41,24;2058,20251208,9,12,14,16,19,42,18;2059,20251211,2,13,26,28,38,43,3;2060,20251215,8,16,22,40,41,42,10;2061,20251218,5,6,13,21,33,34,40;2062,20251222,1,9,18,24,35,42,8;2063,20251225,4,28,29,30,38,42,15;2064,20251229,2,7,24,37,39,41,3;2065,20260105,6,18,21,31,37,40,3;2066,20260108,8,28,30,32,37,38,5;2067,20260112,3,4,12,15,32,42,31;2068,20260115,2,10,13,14,29,33,32;2069,20260119,6,17,23,27,33,35,4;2070,20260122,6,10,25,30,34,36,12;2071,20260126,15,24,29,32,33,35,14;2072,20260129,8,18,24,36,40,42,43;2073,20260202,2,12,14,24,26,29,8;2074,20260205,5,6,16,26,27,36,11;2075,20260209,7,10,14,16,35,37,11;2076,20260212,1,9,20,22,28,41,30;2077,20260216,17,18,23,24,26,43,10;2078,20260219,1,10,20,24,30,35,41;2079,20260223,5,11,15,17,24,39,31;2080,20260226,6,12,30,36,37,38,8;2081,20260302,14,31,32,37,41,42,22;2082,20260305,5,11,14,19,25,40,17;2083,20260309,8,10,13,17,26,29,43;2084,20260312,8,17,18,19,30,39,9;2085,20260316,6,8,13,26,35,43,14;2086,20260319,4,11,19,28,39,40,6;2087,20260323,7,10,15,18,26,39,13;2088,20260326,8,16,18,27,37,39,29;2089,20260330,9,16,18,32,37,43,13;2090,20260402,2,3,6,9,24,36,5;2091,20260406,6,16,21,25,28,43,9;2092,20260409,8,13,27,36,37,43,3;2093,20260413,2,10,21,26,29,38,12;2094,20260416,3,4,7,11,24,30,16;2095,20260420,13,20,22,23,28,30,29;2096,20260423,8,15,18,21,33,43,38;2097,20260427,3,20,24,27,34,42,37;2098,20260430,1,6,15,18,19,42,24;2099,20260504,19,21,34,36,39,42,43;2100,20260507,8,17,24,32,35,41,28;2101,20260511,1,17,29,33,40,42,21;2102,20260514,18,21,25,28,30,43,8;2103,20260518,1,2,4,5,8,38,39;2104,20260521,18,19,21,25,28,34,4;2105,20260525,5,26,28,30,36,40,32;2106,20260528,1,6,17,27,34,43,24;2107,20260601,5,8,27,32,36,39,38;2108,20260604,2,5,10,15,28,43,27;2109,20260608,6,11,19,31,38,41,3;2110,20260611,3,9,18,35,36,40,29;2111,20260615,1,5,8,12,37,43,36;2112,20260618,3,7,8,27,31,40,18;2113,20260622,2,5,32,36,38,42,14;2114,20260625,2,16,20,21,23,33,43;2115,20260629,1,3,11,34,35,42,23;2116,20260702,2,6,13,14,20,42,10;2117,20260706,4,7,26,27,35,41,34;2118,20260709,1,5,8,35,36,37,24;2119,20260713,15,18,20,22,30,38,42;2120,20260716,3,8,13,14,16,43,26;2121,20260720,1,3,10,17,25,26,36;2122,20260723,12,15,18,21,26,32,41;2123,20260727,1,2,4,25,37,40,43;2124,20260730,6,20,29,36,37,41,19;2125,20260803,3,22,25,28,30,43,39;2126,20260806,18,20,22,35,37,42,24;2127,20260810,7,12,15,29,30,33,22;2128,20260813,13,20,22,27,35,38,11;2129,20260817,2,4,6,16,25,41,40;2130,20260820,12,18,35,40,41,43,3;2131,20260824,25,26,28,33,35,43,9;2132,20260827,9,15,16,19,31,32,4;2133,20260831,1,11,14,20,29,38,27;2134,20260903,5,9,10,19,26,35,18;2135,20260907,7,13,32,34,37,39,41;2136,20260910,6,7,33,37,41,43,42;2137,20260914,4,8,10,25,28,33,9;2138,20260917,9,16,21,26,38,40,12;2139,20260921,3,6,23,34,36,43,29;2140,20260924,4,10,11,19,21,33,30;2141,20260928,14,15,22,32,37,41,1;2142,20261001,2,14,20,21,31,39,36;2143,20261005,1,7,8,29,40,43,15;2144,20261008,5,6,11,25,31,32,15;2145,20261012,4,6,8,11,24,27,36;2146,20261015,15,17,19,34,36,37,3;2147,20261019,9,16,22,23,27,29,39;2148,20261022,6,11,14,16,40,42,15;2149,20261026,2,11,15,19,24,36,27;2150,20261029,1,2,14,18,35,38,33",
+    tiers:[1,2,3,4,5], total:C(43,6),
+    ways:{1:1, 2:6, 3:216, 4:9990, 5:155400},
+    prize:{1:200000000, 2:10000000, 3:300000, 4:6800, 5:1000},
+    rule:{1:"本数字6個すべて一致", 2:"本数字5個＋ボーナス数字", 3:"本数字5個一致", 4:"本数字4個一致", 5:"本数字3個一致"},
+    url:"https://www.mizuhobank.co.jp/takarakuji/check/loto/loto6/index.html" },
+  "7": { id:"7", name:"ロト7", max:37, pick:7, nb:2, cost:300, days:[5], dayTxt:"金曜", col:"draws7", raw:"1,20130405,7,10,12,17,23,28,34,3,15;2,20130412,20,24,29,31,33,34,35,12,32;3,20130419,2,7,8,11,14,23,31,5,15;4,20130426,12,13,22,23,24,28,29,2,14;5,20130503,1,3,4,5,16,21,28,22,31;6,20130510,5,15,19,23,30,34,35,6,25;7,20130517,1,3,5,7,27,29,33,6,15;8,20130524,2,21,28,29,30,32,36,6,8;9,20130531,3,4,15,23,27,30,36,13,35;10,20130607,1,2,3,6,24,28,30,16,20;11,20130614,9,15,26,29,32,34,36,14,35;12,20130621,11,12,14,19,26,27,33,24,32;13,20130628,6,10,16,21,27,28,35,15,34;14,20130705,4,7,8,9,24,28,30,34,36;15,20130712,2,10,14,17,23,25,35,8,29;16,20130719,5,6,9,13,16,21,23,8,34;17,20130726,2,3,5,22,34,36,37,7,15;18,20130802,12,17,21,24,29,31,36,20,26;19,20130809,2,14,19,20,21,22,31,1,15;20,20130816,2,5,13,20,21,23,28,11,22;21,20130823,1,9,13,15,25,30,33,19,28;22,20130830,2,4,8,9,15,23,25,3,10;23,20130906,4,8,11,25,28,29,30,14,32;24,20130913,4,5,8,10,16,19,33,2,29;25,20130920,1,6,11,16,17,18,21,10,24;26,20130927,11,13,16,18,26,31,36,21,27;27,20131004,1,10,11,14,17,18,28,25,26;28,20131011,6,7,12,15,19,35,37,1,11;29,20131018,2,3,16,17,24,26,28,15,31;30,20131025,6,8,13,22,26,32,36,16,34;31,20131101,9,12,13,19,23,33,34,20,32;32,20131108,3,8,15,18,27,29,37,31,34;33,20131115,1,4,17,24,29,33,36,19,30;34,20131122,4,6,7,23,24,32,35,8,27;35,20131129,1,16,18,19,25,30,34,26,36;36,20131206,5,6,10,11,20,28,36,25,37;37,20131213,7,8,10,13,14,19,37,29,33;38,20131220,4,14,19,22,24,29,34,8,31;39,20131227,7,13,19,23,25,26,30,1,18;40,20140110,2,6,11,23,26,31,34,7,20;41,20140117,2,3,8,15,34,35,36,25,28;42,20140124,2,15,16,17,23,31,33,8,26;43,20140131,4,6,7,8,24,31,37,5,13;44,20140207,3,4,6,15,27,28,29,1,14;45,20140214,1,2,9,18,21,27,33,25,31;46,20140221,2,5,6,15,23,27,30,4,35;47,20140228,2,9,11,14,20,21,36,6,15;48,20140307,3,5,24,26,29,30,34,8,35;49,20140314,8,11,12,17,24,26,27,14,21;50,20140321,3,4,7,8,15,24,29,11,16;51,20140328,1,4,5,8,20,23,35,15,33;52,20140404,8,10,22,24,26,32,34,5,9;53,20140411,1,4,14,16,20,33,36,12,30;54,20140418,1,3,5,10,18,22,23,7,35;55,20140425,4,12,14,17,23,30,36,13,33;56,20140502,4,23,26,27,28,32,36,29,30;57,20140509,5,6,12,16,17,20,33,8,32;58,20140516,1,6,7,8,23,32,33,11,34;59,20140523,5,8,12,13,21,30,35,27,34;60,20140530,3,7,9,15,16,23,34,5,33;61,20140606,5,10,11,21,28,31,37,13,14;62,20140613,4,10,12,15,27,32,33,9,16;63,20140620,4,8,19,24,28,30,32,12,37;64,20140627,4,15,16,17,20,29,36,19,26;65,20140704,4,7,12,22,23,24,28,25,34;66,20140711,1,11,25,28,31,33,37,3,20;67,20140718,7,11,15,17,18,25,35,6,33;68,20140725,2,7,13,15,24,34,35,12,23;69,20140801,13,17,20,22,28,29,37,11,12;70,20140808,9,10,18,21,27,33,35,4,11;71,20140815,1,6,13,29,34,35,37,2,15;72,20140822,11,12,18,19,20,31,32,9,21;73,20140829,12,16,23,25,27,30,32,28,33;74,20140905,5,13,14,15,16,24,31,9,11;75,20140912,4,9,15,17,19,35,37,10,20;76,20140919,4,13,18,29,32,34,36,24,33;77,20140926,3,10,23,25,26,28,30,15,29;78,20141003,5,6,10,14,24,28,36,7,20;79,20141010,2,4,7,9,21,29,37,6,36;80,20141017,2,5,10,18,21,24,27,25,34;81,20141024,1,3,10,18,28,31,35,9,21;82,20141031,1,3,16,20,25,27,34,18,37;83,20141107,1,11,21,26,28,32,35,18,22;84,20141114,8,16,23,28,29,35,36,12,37;85,20141121,6,7,10,11,22,26,35,14,23;86,20141128,3,10,20,21,22,26,30,24,35;87,20141205,8,9,12,18,20,28,31,13,15;88,20141212,3,4,10,14,25,29,30,18,19;89,20141219,1,3,11,26,28,34,36,17,20;90,20141226,2,8,9,13,14,18,37,11,25;91,20150109,1,5,7,14,15,25,35,18,24;92,20150116,4,5,15,25,26,29,32,11,27;93,20150123,2,5,11,14,17,30,32,31,37;94,20150130,13,19,20,27,28,29,30,26,36;95,20150206,1,8,13,14,18,30,34,26,36;96,20150213,9,11,14,21,22,23,24,10,36;97,20150220,7,13,14,16,22,24,35,1,29;98,20150227,3,9,11,13,19,25,33,10,30;99,20150306,13,17,22,24,27,28,35,11,19;100,20150313,1,2,11,16,25,35,36,9,14;101,20150320,11,12,21,23,28,36,37,3,16;102,20150327,1,4,8,27,28,29,31,13,25;103,20150403,2,3,11,12,22,35,36,30,34;104,20150410,7,9,11,15,16,22,37,12,13;105,20150417,3,15,19,20,26,28,33,17,21;106,20150424,6,10,12,19,21,22,30,1,11;107,20150501,3,8,9,13,17,27,33,29,31;108,20150508,2,6,7,8,28,30,36,18,21;109,20150515,6,17,20,21,24,30,32,7,23;110,20150522,4,12,22,30,31,35,36,19,37;111,20150529,7,8,9,24,28,30,33,1,34;112,20150605,6,7,10,15,27,35,36,13,20;113,20150612,4,6,7,9,15,17,37,14,20;114,20150619,8,13,26,27,28,29,37,4,12;115,20150626,6,8,13,14,20,25,27,24,26;116,20150703,9,14,23,27,28,31,32,3,20;117,20150710,9,10,20,28,31,34,37,23,26;118,20150717,5,8,9,24,27,28,30,16,20;119,20150724,3,6,8,14,15,25,36,24,35;120,20150731,2,16,18,26,32,35,37,9,36;121,20150807,2,4,13,16,21,30,37,19,29;122,20150814,2,16,18,26,27,34,35,5,12;123,20150821,1,3,5,8,29,34,36,23,28;124,20150828,1,2,15,17,18,22,36,6,27;125,20150904,1,6,11,14,19,28,35,18,21;126,20150911,4,10,13,16,17,21,27,1,18;127,20150918,10,12,15,23,28,30,35,6,25;128,20150925,2,4,8,23,26,27,32,3,35;129,20151002,5,7,11,19,24,27,30,29,35;130,20151009,1,15,20,23,25,31,32,5,24;131,20151016,3,4,12,17,32,34,36,23,31;132,20151023,7,10,14,16,20,30,31,35,37;133,20151030,3,7,13,15,17,21,30,14,27;134,20151106,4,9,20,28,30,34,35,12,29;135,20151113,8,9,13,14,24,32,34,3,4;136,20151120,10,17,24,27,30,33,37,18,31;137,20151127,13,19,21,25,27,32,35,16,20;138,20151204,2,5,17,20,21,32,33,30,35;139,20151211,9,16,18,21,23,34,35,4,36;140,20151218,3,11,12,13,17,26,35,1,33;141,20151225,2,10,18,30,31,32,36,21,29;142,20160108,6,12,14,18,21,27,28,1,33;143,20160115,1,3,8,14,28,29,33,4,31;144,20160122,2,9,13,18,22,32,36,17,26;145,20160129,10,12,18,28,29,30,35,4,19;146,20160205,4,10,25,27,28,33,34,15,35;147,20160212,1,5,7,12,15,24,25,8,14;148,20160219,1,9,11,16,20,30,34,12,33;149,20160226,1,4,15,19,22,23,31,12,32;150,20160304,6,7,14,20,27,31,34,11,24;151,20160311,9,10,13,15,21,22,24,4,8;152,20160318,8,12,17,21,23,24,31,6,7;153,20160325,7,9,10,16,20,28,37,2,33;154,20160401,2,4,19,21,24,28,35,3,13;155,20160408,2,9,13,18,22,24,26,10,37;156,20160415,4,9,16,19,22,33,34,17,36;157,20160422,5,9,16,26,28,29,32,1,37;158,20160429,3,6,7,30,32,36,37,5,20;159,20160506,10,14,17,21,23,27,31,16,24;160,20160513,1,2,8,24,32,36,37,23,33;161,20160520,8,14,17,18,20,22,34,4,30;162,20160527,2,7,8,12,14,23,27,6,10;163,20160603,1,2,6,16,28,30,31,3,7;164,20160610,3,13,20,23,31,35,36,2,11;165,20160617,9,11,14,15,16,18,27,6,20;166,20160624,14,20,27,29,30,31,37,23,34;167,20160701,1,3,5,7,10,26,36,19,37;168,20160708,3,9,12,14,19,20,36,2,5;169,20160715,1,5,10,20,21,28,30,25,26;170,20160722,3,5,6,9,27,32,36,12,24;171,20160729,1,2,6,21,23,27,28,11,16;172,20160805,5,20,21,27,30,31,36,9,26;173,20160812,7,9,19,22,24,27,30,4,28;174,20160819,10,13,14,15,23,31,32,4,29;175,20160826,6,17,21,31,33,35,37,14,18;176,20160902,1,11,12,17,22,30,35,15,16;177,20160909,9,15,19,23,25,34,36,2,35;178,20160916,6,9,11,15,26,34,36,13,37;179,20160923,4,9,12,13,22,26,36,5,33;180,20160930,1,8,11,21,23,25,28,5,37;181,20161007,7,8,10,13,19,23,24,15,27;182,20161014,1,7,10,11,20,23,30,3,37;183,20161021,6,15,20,26,33,34,37,19,29;184,20161028,7,14,18,22,23,26,34,2,32;185,20161104,1,2,4,16,26,29,34,11,12;186,20161111,5,14,16,19,31,33,37,21,28;187,20161118,4,6,10,23,24,32,36,15,31;188,20161125,6,15,19,25,26,30,31,14,18;189,20161202,3,7,8,10,18,23,35,1,19;190,20161209,2,11,12,18,21,33,36,8,34;191,20161216,8,15,21,24,26,27,29,7,30;192,20161223,12,13,14,19,25,33,34,3,22;193,20161230,4,6,20,21,22,24,31,9,10;194,20170106,3,6,27,30,31,32,36,14,23;195,20170113,4,7,12,20,23,24,31,26,35;196,20170120,7,13,15,25,30,32,37,8,14;197,20170127,6,8,10,12,16,21,28,14,23;198,20170203,18,21,31,32,33,36,37,5,25;199,20170210,1,9,17,20,22,28,29,13,16;200,20170217,13,14,17,21,27,28,34,1,11;201,20170224,8,11,17,24,28,31,32,12,34;202,20170303,3,7,11,16,22,34,37,29,32;203,20170310,6,13,17,22,32,33,36,12,28;204,20170317,5,19,20,21,30,34,36,7,12;205,20170324,4,5,19,31,35,36,37,27,32;206,20170331,1,6,7,11,27,35,36,22,26;207,20170407,4,5,10,13,28,32,33,19,26;208,20170414,4,13,16,18,22,26,33,27,29;209,20170421,3,4,6,13,22,31,36,28,34;210,20170428,2,4,6,11,15,19,36,23,34;211,20170505,7,15,22,25,31,32,35,29,36;212,20170512,4,6,10,19,20,24,29,1,27;213,20170519,5,13,15,18,19,24,35,20,23;214,20170526,2,6,9,12,31,36,37,3,22;215,20170602,11,12,13,21,29,36,37,7,9;216,20170609,9,14,22,24,25,36,37,8,28;217,20170616,4,6,26,27,28,35,36,24,34;218,20170623,15,16,17,21,26,29,30,10,34;219,20170630,6,9,13,14,21,25,31,2,4;220,20170707,7,9,11,18,25,28,35,20,27;221,20170714,1,2,9,11,17,30,35,13,36;222,20170721,3,9,18,21,23,27,29,35,37;223,20170728,10,13,19,21,26,33,34,24,25;224,20170804,2,4,7,10,12,29,34,1,21;225,20170811,13,15,17,18,20,21,26,25,29;226,20170818,12,17,21,24,26,30,32,10,22;227,20170825,2,3,7,9,22,23,26,29,30;228,20170901,6,11,14,21,24,28,31,22,36;229,20170908,2,3,9,30,33,36,37,1,32;230,20170915,3,5,8,15,22,25,27,18,31;231,20170922,4,15,18,24,25,34,36,10,26;232,20170929,2,4,7,9,15,35,37,10,23;233,20171006,3,13,17,25,26,27,29,8,37;234,20171013,7,14,15,16,23,25,30,5,34;235,20171020,2,9,13,18,21,33,34,3,11;236,20171027,19,22,23,34,35,36,37,10,30;237,20171103,3,4,7,19,20,21,29,8,33;238,20171110,3,21,26,33,34,35,37,23,31;239,20171117,8,13,17,21,23,28,37,1,14;240,20171124,9,12,14,24,29,31,35,5,30;241,20171201,5,11,12,19,21,26,28,4,20;242,20171208,1,5,13,17,31,32,35,19,24;243,20171215,6,9,13,18,20,22,30,11,14;244,20171222,2,9,17,22,32,34,36,11,12;245,20171229,2,8,9,11,24,26,27,7,36;246,20180105,3,6,9,19,23,25,31,21,36;247,20180112,10,12,13,16,34,35,36,11,37;248,20180119,1,5,6,22,25,27,31,12,18;249,20180126,9,20,28,29,31,34,37,5,25;250,20180202,5,9,10,13,26,30,34,18,23;251,20180209,1,15,20,26,28,34,37,23,30;252,20180216,8,23,24,25,27,30,31,11,17;253,20180223,6,7,9,12,15,17,24,26,29;254,20180302,1,12,14,18,23,24,31,7,26;255,20180309,1,4,11,13,15,21,32,5,10;256,20180316,14,21,24,27,30,33,37,19,20;257,20180323,5,15,16,26,27,32,35,23,28;258,20180330,1,3,11,20,23,32,35,25,26;259,20180406,5,6,15,19,22,29,32,4,31;260,20180413,4,8,12,23,29,31,34,5,6;261,20180420,4,14,15,17,21,23,26,7,8;262,20180427,2,6,7,9,19,23,36,5,15;263,20180504,1,5,11,16,27,35,36,6,14;264,20180511,8,13,15,17,21,26,29,4,24;265,20180518,12,13,15,19,21,24,36,10,37;266,20180525,6,11,15,17,20,27,32,16,22;267,20180601,8,13,18,20,23,25,26,6,28;268,20180608,4,5,9,15,29,31,33,26,27;269,20180615,1,9,15,24,31,33,36,2,26;270,20180622,1,2,11,13,15,24,25,26,28;271,20180629,1,9,15,16,19,32,35,14,31;272,20180706,2,5,8,15,18,26,31,19,25;273,20180713,13,15,21,23,26,32,34,5,9;274,20180720,9,14,21,23,25,26,37,7,29;275,20180727,8,9,15,19,24,25,35,34,37;276,20180803,3,6,12,17,22,34,35,2,33;277,20180810,6,7,9,11,21,23,25,1,22;278,20180817,6,9,14,21,23,33,36,27,28;279,20180824,7,11,15,17,19,23,31,9,37;280,20180831,4,9,10,11,24,32,35,2,37;281,20180907,1,2,17,19,20,22,26,30,36;282,20180914,10,17,18,25,29,35,36,7,14;283,20180921,13,14,15,17,23,29,31,10,19;284,20180928,6,7,10,25,29,30,33,1,31;285,20181005,11,15,21,26,30,34,35,4,36;286,20181012,4,5,14,17,18,29,37,27,31;287,20181019,2,7,10,20,24,29,34,4,8;288,20181026,1,8,9,16,27,32,37,17,31;289,20181102,2,7,10,12,16,17,34,23,25;290,20181109,3,13,22,26,31,32,37,29,35;291,20181116,1,11,18,19,21,29,37,5,15;292,20181123,12,15,25,26,27,29,35,24,30;293,20181130,11,13,15,20,27,29,35,1,7;294,20181207,3,4,6,10,14,22,29,28,32;295,20181214,4,5,6,8,9,22,32,13,26;296,20181221,1,8,10,12,18,28,29,25,27;297,20181228,2,3,11,16,23,28,36,8,24;298,20190104,1,3,8,11,18,19,22,26,30;299,20190111,1,6,10,13,16,26,36,28,30;300,20190118,4,7,21,31,33,34,35,6,12;301,20190125,4,11,12,25,27,30,33,5,19;302,20190201,8,16,26,27,28,32,34,4,25;303,20190208,4,7,14,17,21,34,37,10,30;304,20190215,7,9,10,17,28,33,36,18,23;305,20190222,6,17,23,24,27,28,31,10,18;306,20190301,12,13,15,22,25,33,35,1,31;307,20190308,5,8,15,24,25,32,35,20,26;308,20190315,5,6,11,15,20,32,33,13,25;309,20190322,1,7,13,14,16,21,22,18,34;310,20190329,17,25,26,28,31,32,37,6,9;311,20190405,9,11,18,24,26,27,37,30,33;312,20190412,1,2,4,18,20,29,34,17,30;313,20190419,9,13,16,23,28,29,30,1,20;314,20190426,3,6,8,19,32,34,35,12,30;315,20190503,3,11,18,26,30,33,37,28,31;316,20190510,3,9,10,17,30,33,34,6,8;317,20190517,7,8,14,15,16,20,29,18,19;318,20190524,4,5,10,12,27,34,36,3,14;319,20190531,2,6,14,23,28,31,35,19,27;320,20190607,5,6,18,22,26,33,34,36,37;321,20190614,15,24,27,28,29,34,35,9,25;322,20190621,1,10,11,21,26,29,30,14,20;323,20190628,11,14,15,21,26,34,36,23,27;324,20190705,9,13,16,17,18,19,20,30,36;325,20190712,4,14,17,18,21,31,33,6,20;326,20190719,1,2,17,18,24,27,29,12,32;327,20190726,1,3,13,14,16,30,31,2,17;328,20190802,3,9,10,14,19,24,30,18,21;329,20190809,3,10,19,20,26,28,30,15,25;330,20190816,3,4,10,12,17,18,20,19,32;331,20190823,5,7,11,12,15,18,20,19,30;332,20190830,5,7,10,15,24,27,30,3,33;333,20190906,1,4,10,11,16,24,34,30,32;334,20190913,3,7,15,16,30,34,35,8,29;335,20190920,9,10,17,18,22,25,35,13,14;336,20190927,9,10,13,21,25,31,33,24,37;337,20191004,5,7,10,12,14,24,35,11,33;338,20191011,7,9,16,17,23,27,34,15,36;339,20191018,11,15,18,20,23,25,32,9,37;340,20191025,6,14,17,26,27,30,36,12,28;341,20191101,4,11,17,27,29,31,36,19,24;342,20191108,3,6,24,28,32,35,36,4,8;343,20191115,17,19,22,29,30,31,32,11,16;344,20191122,11,19,28,29,31,32,37,12,21;345,20191129,6,9,10,18,28,31,32,24,35;346,20191206,11,16,18,23,30,31,35,3,27;347,20191213,3,6,11,13,18,20,34,25,35;348,20191220,2,5,17,18,19,20,33,1,24;349,20191227,4,10,11,15,18,22,34,16,32;350,20200110,10,19,21,23,24,30,37,2,28;351,20200117,8,13,17,19,23,25,28,5,16;352,20200124,3,4,14,18,26,30,32,28,34;353,20200131,11,15,22,23,24,29,33,19,34;354,20200207,1,2,8,10,13,25,31,23,35;355,20200214,4,6,9,10,23,27,33,14,31;356,20200221,4,16,20,30,33,34,36,19,21;357,20200228,5,8,12,13,14,24,30,27,35;358,20200306,5,13,14,26,32,33,34,8,11;359,20200313,4,7,11,17,19,26,35,1,24;360,20200320,9,11,13,14,20,22,37,15,17;361,20200327,5,9,16,20,29,33,35,2,8;362,20200403,4,7,8,14,22,24,27,13,26;363,20200410,13,15,17,22,26,34,36,3,19;364,20200417,3,9,10,14,16,20,27,19,33;365,20200424,1,4,13,14,16,22,35,10,23;366,20200501,10,24,25,26,27,33,36,4,23;367,20200508,8,14,19,20,29,30,31,7,35;368,20200515,7,8,9,13,21,34,35,3,20;369,20200522,1,7,9,11,15,31,34,6,33;370,20200529,7,10,16,25,26,33,34,24,35;371,20200605,1,3,4,8,11,21,25,12,23;372,20200612,6,8,22,23,32,33,36,9,27;373,20200619,2,3,17,18,22,23,31,4,30;374,20200626,4,5,9,10,18,27,35,15,34;375,20200703,13,15,18,19,23,27,32,34,35;376,20200710,6,11,14,17,23,31,37,10,15;377,20200717,6,7,10,17,25,33,36,27,32;378,20200724,1,5,9,10,14,15,29,20,28;379,20200731,3,8,15,22,24,29,35,18,26;380,20200807,8,14,24,25,32,34,36,13,16;381,20200814,4,8,25,26,27,31,32,9,22;382,20200821,2,3,5,8,19,22,37,16,28;383,20200828,8,11,15,22,26,28,30,10,20;384,20200904,3,7,15,18,26,30,31,9,33;385,20200911,4,12,14,24,29,34,35,5,15;386,20200918,9,19,22,32,35,36,37,7,21;387,20200925,3,7,13,22,30,32,37,14,15;388,20201002,1,6,8,10,18,21,32,13,28;389,20201009,1,6,11,13,18,24,27,17,23;390,20201016,3,6,19,21,23,26,27,30,34;391,20201023,10,23,27,32,33,35,37,24,26;392,20201030,1,4,6,15,20,22,26,18,21;393,20201106,7,14,15,22,27,30,31,9,32;394,20201113,6,10,22,23,27,32,33,8,19;395,20201120,1,2,5,20,26,29,32,8,9;396,20201127,2,3,5,8,16,20,34,26,31;397,20201204,4,12,13,15,21,28,37,7,20;398,20201211,3,4,10,17,20,22,33,1,6;399,20201218,7,15,19,20,21,33,36,4,10;400,20201225,4,17,22,28,30,31,35,25,34;401,20210108,4,5,9,14,18,30,35,1,33;402,20210115,7,9,12,17,20,26,29,4,13;403,20210122,2,6,8,12,19,20,29,5,26;404,20210129,4,8,13,16,25,30,32,9,26;405,20210205,3,10,16,17,24,32,36,11,29;406,20210212,1,2,5,16,18,21,29,24,25;407,20210219,19,21,25,26,28,30,31,9,16;408,20210226,16,18,19,21,29,30,35,14,28;409,20210305,13,15,16,24,30,31,37,12,33;410,20210312,1,2,18,21,26,29,37,9,36;411,20210319,4,11,12,21,23,27,36,9,14;412,20210326,14,20,22,29,31,33,34,15,24;413,20210402,3,10,16,18,19,34,35,27,36;414,20210409,3,8,16,21,25,36,37,14,20;415,20210416,4,8,12,13,23,32,37,16,35;416,20210423,8,9,10,15,16,30,31,29,36;417,20210430,4,5,13,18,23,27,32,9,11;418,20210507,10,13,17,18,22,28,37,1,20;419,20210514,3,11,14,21,26,29,34,22,33;420,20210521,4,5,11,13,24,32,34,2,3;421,20210528,9,15,18,26,28,32,37,21,36;422,20210604,1,9,21,23,30,35,36,5,6;423,20210611,1,7,9,11,29,31,32,2,6;424,20210618,5,6,12,19,25,30,35,26,33;425,20210625,2,9,14,20,22,34,35,7,24;426,20210702,1,2,6,8,30,31,33,13,35;427,20210709,11,13,26,27,31,33,37,9,18;428,20210716,3,6,16,22,31,34,35,24,32;429,20210723,6,11,14,27,30,32,35,18,24;430,20210730,2,12,17,24,28,30,32,3,27;431,20210806,7,11,12,17,19,20,26,2,3;432,20210813,5,10,13,24,29,30,35,21,31;433,20210820,14,17,20,25,32,33,36,10,34;434,20210827,10,11,12,17,29,34,37,26,30;435,20210903,3,5,7,11,15,17,25,13,32;436,20210910,5,6,21,22,26,31,32,18,36;437,20210917,8,10,14,15,23,25,26,1,11;438,20210924,4,13,16,21,32,34,37,27,33;439,20211001,1,3,6,9,26,29,31,14,18;440,20211008,5,10,17,18,19,22,32,14,35;441,20211015,15,21,22,23,27,28,37,8,25;442,20211022,6,13,14,16,19,30,32,25,36;443,20211029,1,5,8,26,28,32,36,23,24;444,20211105,11,15,16,17,18,27,29,25,33;445,20211112,4,22,25,27,28,30,33,2,3;446,20211119,1,7,9,12,15,29,32,11,28;447,20211126,3,5,8,13,26,30,37,25,28;448,20211203,7,21,24,29,32,36,37,22,27;449,20211210,2,21,26,27,32,33,34,8,9;450,20211217,2,7,12,15,21,23,30,9,31;451,20211224,2,15,22,25,28,33,37,10,17;452,20220107,5,17,20,21,31,34,35,8,27;453,20220114,2,8,10,21,24,26,35,9,13;454,20220121,8,17,21,26,27,29,31,1,33;455,20220128,1,5,8,15,18,26,36,33,34;456,20220204,9,15,17,18,22,25,31,33,36;457,20220211,7,14,19,27,31,35,36,9,33;458,20220218,7,11,12,14,19,21,33,6,37;459,20220225,2,4,7,8,10,20,29,14,33;460,20220304,5,6,9,23,27,28,30,4,13;461,20220311,2,13,19,22,32,35,37,14,33;462,20220318,7,11,24,27,29,34,35,4,18;463,20220325,3,7,13,16,19,24,30,6,10;464,20220401,7,8,13,17,30,32,36,1,10;465,20220408,1,4,5,13,27,31,35,15,22;466,20220415,5,6,8,14,15,25,29,18,33;467,20220422,7,8,11,13,14,26,30,31,34;468,20220429,3,12,15,16,25,29,37,26,28;469,20220506,1,6,8,13,16,30,33,23,28;470,20220513,2,3,9,16,27,32,36,1,34;471,20220520,3,5,7,8,11,19,34,17,32;472,20220527,5,7,8,32,33,34,36,4,6;473,20220603,6,11,21,24,28,33,37,8,27;474,20220610,3,17,19,21,24,32,34,27,28;475,20220617,1,2,22,24,26,31,37,12,19;476,20220624,4,7,9,15,22,24,31,21,37;477,20220701,2,5,9,19,25,32,37,7,29;478,20220708,6,8,11,13,16,20,32,12,34;479,20220715,8,11,13,18,24,30,31,21,23;480,20220722,10,13,19,21,26,30,36,22,34;481,20220729,1,10,13,14,16,25,27,5,21;482,20220805,2,5,14,15,17,19,36,8,34;483,20220812,2,11,20,23,25,36,37,29,34;484,20220819,1,4,6,9,13,22,31,29,30;485,20220826,4,6,17,20,22,24,26,8,9;486,20220902,8,13,15,23,24,31,35,14,19;487,20220909,9,10,13,15,26,34,37,22,36;488,20220916,3,13,16,18,19,20,35,2,11;489,20220923,3,6,7,15,25,29,31,8,14;490,20220930,12,14,18,21,23,29,37,7,15;491,20221007,3,14,17,21,22,32,35,6,30;492,20221014,7,10,12,15,23,31,37,9,18;493,20221021,5,13,14,20,21,25,31,9,36;494,20221028,7,9,12,22,28,29,32,17,19;495,20221104,2,16,19,20,22,33,36,6,32;496,20221111,5,8,15,18,25,27,36,10,26;497,20221118,18,20,24,26,27,30,33,17,19;498,20221125,6,8,12,20,21,24,29,4,18;499,20221202,5,9,14,18,27,32,34,6,12;500,20221209,17,18,24,30,31,32,35,6,36;501,20221216,1,2,4,7,12,14,31,30,33;502,20221223,1,2,12,17,21,22,33,4,30;503,20221230,5,7,8,13,23,26,33,31,37;504,20230106,1,3,4,5,6,29,31,11,14;505,20230113,9,10,12,15,16,28,36,1,23;506,20230120,8,14,19,22,29,31,37,3,21;507,20230127,4,19,25,26,30,32,36,1,15;508,20230203,1,5,6,9,16,26,31,25,33;509,20230210,10,14,22,26,27,32,33,20,37;510,20230217,3,5,9,11,17,33,37,4,22;511,20230224,1,9,14,24,28,36,37,16,31;512,20230303,5,7,17,22,25,26,28,3,23;513,20230310,1,4,10,13,15,19,37,16,20;514,20230317,1,5,10,17,20,27,37,3,22;515,20230324,3,15,17,22,26,27,28,6,8;516,20230331,7,12,15,16,18,25,36,9,19;517,20230407,3,6,10,16,26,29,31,7,24;518,20230414,5,8,11,24,30,32,36,4,35;519,20230421,1,2,8,14,17,21,34,20,26;520,20230428,9,22,25,28,33,34,37,15,16;521,20230505,21,24,25,27,30,33,36,3,31;522,20230512,1,10,12,19,22,25,37,2,34;523,20230519,3,17,19,27,28,32,35,2,34;524,20230526,4,17,22,27,29,31,34,3,37;525,20230602,11,14,17,18,21,25,31,1,27;526,20230609,4,13,17,19,20,26,29,2,28;527,20230616,4,8,12,25,27,32,34,15,17;528,20230623,5,7,10,19,30,32,33,1,17;529,20230630,7,9,13,14,22,26,29,10,21;530,20230707,1,11,13,28,29,30,34,23,27;531,20230714,4,6,9,11,14,28,30,10,12;532,20230721,4,9,13,18,26,28,36,8,16;533,20230728,2,4,9,11,14,25,37,29,32;534,20230804,10,17,18,19,20,24,25,30,32;535,20230811,5,11,12,19,29,32,36,9,26;536,20230818,8,12,16,17,22,28,34,9,37;537,20230825,2,3,9,13,14,35,37,4,17;538,20230901,1,2,11,12,16,25,28,6,22;539,20230908,4,6,8,18,20,27,35,24,26;540,20230915,3,7,10,18,19,28,36,13,26;541,20230922,6,14,23,25,27,28,34,19,37;542,20230929,2,9,26,31,33,35,36,15,20;543,20231006,2,11,13,18,23,24,36,17,26;544,20231013,10,11,18,21,22,29,34,4,32;545,20231020,3,12,16,17,27,30,34,15,37;546,20231027,7,14,17,28,33,35,36,13,27;547,20231103,4,11,14,18,23,25,29,17,32;548,20231110,1,13,16,17,18,25,30,20,34;549,20231117,13,19,20,28,33,34,35,4,32;550,20231124,7,8,13,22,24,29,30,10,35;551,20231201,15,16,17,22,29,32,37,23,24;552,20231208,7,11,12,16,18,33,34,1,14;553,20231215,2,6,13,15,16,20,33,9,28;554,20231222,4,10,15,17,29,32,36,13,30;555,20231229,9,12,17,19,26,32,34,11,22;556,20240105,17,20,26,28,29,33,35,1,6;557,20240112,3,5,7,10,17,18,35,2,21;558,20240119,15,20,21,22,23,26,34,6,10;559,20240126,3,4,10,13,15,18,22,2,16;560,20240202,3,20,29,32,33,34,35,2,24;561,20240209,6,8,19,20,27,32,37,13,33;562,20240216,2,14,15,20,28,30,34,3,4;563,20240223,1,4,6,14,16,19,31,12,18;564,20240301,9,13,15,18,22,24,30,6,27;565,20240308,3,6,9,11,19,30,36,1,33;566,20240315,3,5,18,25,28,35,37,7,8;567,20240322,6,8,16,18,19,34,37,15,30;568,20240329,8,18,20,29,30,33,34,5,23;569,20240405,12,15,17,22,30,34,35,5,9;570,20240412,1,3,9,12,25,26,35,29,31;571,20240419,13,26,27,29,30,34,37,2,23;572,20240426,1,2,4,19,21,26,28,3,25;573,20240503,11,12,18,19,23,26,31,15,25;574,20240510,4,5,13,16,22,23,35,36,37;575,20240517,2,12,18,20,25,28,30,9,23;576,20240524,11,13,14,18,19,23,31,7,27;577,20240531,11,13,19,25,29,36,37,18,30;578,20240607,2,15,19,20,22,31,36,13,23;579,20240614,7,19,23,33,34,35,36,5,10;580,20240621,4,13,14,15,17,27,33,2,11;581,20240628,3,8,10,15,18,23,37,17,24;582,20240705,5,7,22,29,30,32,36,3,33;583,20240712,1,5,8,9,20,30,37,11,26;584,20240719,10,11,12,17,23,30,36,20,21;585,20240726,6,11,13,14,16,27,34,12,25;586,20240802,1,2,4,14,15,22,23,13,36;587,20240809,15,18,21,22,23,25,32,1,30;588,20240816,3,5,9,13,15,21,31,12,17;589,20240823,1,6,8,9,14,29,33,5,23;590,20240830,1,3,9,10,15,25,35,19,28;591,20240906,4,7,8,11,21,23,35,10,24;592,20240913,3,8,11,15,19,24,32,14,30;593,20240920,3,8,9,14,15,22,32,1,12;594,20240927,5,12,21,25,27,34,36,10,32;595,20241004,14,15,16,19,25,28,33,6,29;596,20241011,1,9,16,19,23,29,32,5,37;597,20241018,2,4,14,15,22,27,34,1,5;598,20241025,1,4,7,11,12,18,26,3,33;599,20241101,4,7,16,19,26,31,33,25,29;600,20241108,1,2,12,16,19,29,32,9,37;601,20241115,4,8,18,20,29,35,37,19,34;602,20241122,7,15,18,24,29,31,34,5,25;603,20241129,4,9,10,23,28,30,34,18,31;604,20241206,4,6,9,12,25,31,36,27,30;605,20241213,2,8,15,26,28,31,32,19,24;606,20241220,9,17,18,20,22,27,36,25,37;607,20241227,12,14,20,27,31,34,37,19,21;608,20250110,7,10,11,18,20,29,30,32,36;609,20250117,4,11,12,23,26,32,37,1,9;610,20250124,1,8,9,23,24,31,36,21,28;611,20250131,7,8,11,18,20,30,34,5,14;612,20250207,5,13,16,23,27,31,34,26,33;613,20250214,3,5,6,10,19,21,35,13,27;614,20250221,14,21,22,23,24,28,34,5,37;615,20250228,4,11,21,26,27,28,33,10,13;616,20250307,7,15,20,28,29,34,36,1,35;617,20250314,2,6,10,12,25,28,35,27,31;618,20250321,7,17,20,23,24,34,36,25,35;619,20250328,8,9,18,20,27,29,32,7,12;620,20250404,2,4,8,10,12,29,32,6,13;621,20250411,1,2,12,13,14,30,36,9,24;622,20250418,1,10,28,29,30,33,34,21,27;623,20250425,9,12,22,26,28,31,37,7,30;624,20250502,2,14,15,26,27,34,36,9,24;625,20250509,3,10,12,18,19,24,32,4,15;626,20250516,1,3,7,12,17,32,34,14,30;627,20250523,9,15,21,30,33,34,37,10,35;628,20250530,1,8,9,11,18,27,35,16,34;629,20250606,2,7,9,21,23,24,30,22,29;630,20250613,4,6,8,23,28,29,34,10,19;631,20250620,2,3,6,17,33,35,36,25,37;632,20250627,5,7,10,11,29,31,37,13,25;633,20250704,2,5,10,17,21,31,36,20,32;634,20250711,2,12,18,29,32,36,37,5,21;635,20250718,10,12,20,29,30,31,34,4,15;636,20250725,10,14,17,20,26,27,29,3,11;637,20250801,1,4,7,8,9,20,21,11,30;638,20250808,1,6,18,19,35,36,37,11,24;639,20250815,5,9,12,15,30,31,34,13,29;640,20250822,2,7,9,12,13,14,29,15,30;641,20250829,1,3,7,23,24,33,36,17,30;642,20250905,1,7,22,23,33,34,35,2,24;643,20250912,1,5,15,16,18,27,34,19,22;644,20250919,1,11,12,14,20,26,29,2,5;645,20250926,7,10,16,20,26,32,35,24,33;646,20251003,5,12,13,15,18,35,37,11,29;647,20251010,4,5,9,13,17,22,28,18,31;648,20251017,3,17,19,24,28,29,35,7,13;649,20251024,12,22,23,26,33,35,37,2,21;650,20251031,1,8,10,14,25,33,35,12,21;651,20251107,2,13,19,20,24,26,35,29,36;652,20251114,1,16,21,26,27,30,35,6,37;653,20251121,6,7,12,25,26,30,33,13,15;654,20251128,3,12,25,29,30,32,33,28,31;655,20251205,4,5,12,13,24,26,33,3,14;656,20251212,1,4,6,20,30,34,37,14,25;657,20251219,9,11,16,23,27,29,32,6,24;658,20251226,10,12,16,18,19,22,37,11,20;659,20260109,2,8,9,14,27,34,36,5,18;660,20260116,4,6,12,13,16,17,31,14,20;661,20260123,7,12,17,22,31,34,35,20,32;662,20260130,4,14,15,21,22,24,37,5,20;663,20260206,4,6,10,11,13,17,23,25,32;664,20260213,3,6,8,14,21,22,31,17,37;665,20260220,6,8,14,19,22,25,35,12,17;666,20260227,2,17,18,22,23,25,33,16,34;667,20260306,9,13,20,22,28,29,33,21,23;668,20260313,1,8,11,14,18,22,29,19,35;669,20260320,3,5,6,7,9,13,16,11,23;670,20260327,3,4,9,10,18,21,37,15,23;671,20260403,7,13,16,22,28,33,36,2,25;672,20260410,7,11,15,16,17,24,33,6,9;673,20260417,6,9,10,12,16,24,32,17,19;674,20260424,1,6,7,9,12,22,26,8,14;675,20260501,5,8,16,18,24,28,31,6,23;676,20260508,2,6,15,19,20,22,27,31,33;677,20260515,5,6,7,8,15,17,19,1,33;678,20260522,2,6,12,15,24,26,34,18,20;679,20260529,6,8,9,18,22,24,35,4,20;680,20260605,9,10,22,26,27,31,36,20,29;681,20260612,1,10,12,13,19,33,35,14,37;682,20260619,11,14,17,23,28,30,36,12,20;683,20260626,11,21,22,25,28,29,36,8,32;684,20260703,8,14,17,19,20,32,36,21,25;685,20260710,1,5,16,20,21,22,31,23,36;686,20260717,1,3,16,18,32,34,35,2,15;687,20260724,15,22,23,24,25,29,36,35,37;688,20260731,4,21,25,28,30,35,37,12,16;689,20260807,4,18,23,24,32,33,35,29,36;690,20260814,3,10,14,17,18,20,25,19,34;691,20260821,8,10,20,22,23,27,37,2,9;692,20260828,7,9,15,18,20,28,31,21,34;693,20260904,16,17,22,23,25,33,35,13,31;694,20260911,3,13,24,26,30,31,36,23,34;695,20260918,5,6,11,16,22,24,34,15,18;696,20260925,10,11,15,16,23,24,34,14,35;697,20261002,1,6,12,23,28,32,36,31,34;698,20261009,10,13,21,24,28,29,34,1,26;699,20261016,5,6,8,14,15,22,29,3,16;700,20261023,2,3,8,12,21,25,26,13,34;701,20261030,1,2,3,13,21,23,24,6,25",
+    tiers:[1,2,3,4,5,6], total:C(37,7),
+    ways:{1:1, 2:14, 3:196, 4:9135, 5:142100, 6:242550},
+    prize:{1:600000000, 2:7300000, 3:730000, 4:9100, 5:1400, 6:1000},
+    rule:{1:"本数字7個すべて一致", 2:"本数字6個＋ボーナス数字1個以上", 3:"本数字6個一致", 4:"本数字5個一致", 5:"本数字4個一致", 6:"本数字3個＋ボーナス数字1個以上"},
+    url:"https://www.mizuhobank.co.jp/takarakuji/check/loto/loto7/index.html" },
+};
+for(const g of Object.values(GAMES)){
+  g.prob={}; for(const k of g.tiers) g.prob[k]=g.ways[k]/g.total;
+  g.range=Array.from({length:g.max},(_,i)=>i+1);
+  g.BASE=new Map(); g.extraDb=new Map(); g.extraLocal=new Map();
+  for(const s of g.raw.split(";")){
+    const a=s.split(",").map(Number), d=String(a[1]);
+    g.BASE.set(a[0],{round:a[0], date:`${d.slice(0,4)}-${d.slice(4,6)}-${d.slice(6,8)}`, nums:a.slice(2,2+g.pick), bonus:a.slice(2+g.pick,2+g.pick+g.nb), src:"base"});
+  }
+}
+const TIER_NAME = k => k ? `${k}等` : "はずれ";
+let cg = "6";            // いま表示しているくじ
+const G = () => GAMES[cg];
+
+function validDraw(g,o){
+  if(!o||!Number.isInteger(o.round)||o.round<1) return false;
+  if(!Array.isArray(o.nums)||o.nums.length!==g.pick||!Array.isArray(o.bonus)||o.bonus.length!==g.nb) return false;
+  const all=[...o.nums,...o.bonus];
+  return all.every(n=>Number.isInteger(n)&&n>=1&&n<=g.max) && new Set(all).size===all.length && /^\d{4}-\d{2}-\d{2}$/.test(o.date||"");
+}
+function refreshDraws(g){
+  const m=new Map(g.BASE);
+  for(const [k,v] of g.extraLocal) if(!m.has(k)) m.set(k,v);
+  for(const [k,v] of g.extraDb) if(!m.has(k)||m.get(k).src==="local") m.set(k,v);
+  g.DRAWS=m; g.LATEST=Math.max(...m.keys());
+}
+Object.values(GAMES).forEach(refreshDraws);
+
+/* 次の抽せん日（年末年始 12/31〜1/3 はお休みとして推定） */
+function nextDrawDate(g, fromIso){
+  const d=new Date(fromIso+"T12:00:00+09:00");
+  for(let i=0;i<21;i++){
+    d.setUTCDate(d.getUTCDate()+1);
+    const wd=d.getUTCDay(), mo=d.getUTCMonth()+1, da=d.getUTCDate();
+    if(g.days.includes(wd) && !((mo===12&&da===31)||(mo===1&&da<=3))) return d;
+  }
+  return d;
+}
+const iso = d => d.toISOString().slice(0,10);
+const WD = "日月火水木金土";
+function jpDate(s){ const [y,m,d]=s.split("-").map(Number); return `${y}/${m}/${d}（${WD[new Date(Date.UTC(y,m-1,d)).getUTCDay()]}）`; }
+function shortDate(s){ const [y,m,d]=s.split("-").map(Number); return `${m}/${d}（${WD[new Date(Date.UTC(y,m-1,d)).getUTCDay()]}）`; }
+const nextRound = g => g.LATEST+1;
+const nextRoundDate = g => iso(nextDrawDate(g, g.DRAWS.get(g.LATEST).date));
+const todayJst = () => new Date(Date.now()+9*3600e3).toISOString().slice(0,10);
+
+/* ---------- 判定 ---------- */
+function judge(g, nums, d){
+  const set=new Set(d.nums); let m=0, b=0;
+  for(const n of nums){ if(set.has(n)) m++; else if(d.bonus.includes(n)) b++; }
+  if(g.id==="6"){
+    if(m===6) return 1; if(m===5) return b?2:3; if(m===4) return 4; if(m===3) return 5; return 0;
+  }
+  if(m===7) return 1; if(m===6) return b?2:3; if(m===5) return 4; if(m===4) return 5; if(m===3&&b) return 6; return 0;
+}
+
+/* ---------- 乱数・小道具 ---------- */
+function mulberry32(a){ return function(){ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+function pickFrom(pool,k,rng){ const p=pool.slice(); for(let i=p.length-1;i>0;i--){ const j=Math.floor(rng()*(i+1)); [p[i],p[j]]=[p[j],p[i]]; } return p.slice(0,k); }
+const sortN = a => a.slice().sort((x,y)=>x-y);
+function combos(arr,k){ const out=[]; const rec=(s,acc)=>{ if(acc.length===k){ out.push(acc.slice()); return; } for(let i=s;i<arr.length;i++){ acc.push(arr[i]); rec(i+1,acc); acc.pop(); } }; rec(0,[]); return out; }
+function consecPairs(a){ const s=sortN(a); let c=0; for(let i=1;i<s.length;i++) if(s[i]-s[i-1]===1) c++; return c; }
+const hasConsecLimit = a => consecPairs(a)<=1;
+function hasDigitPair(a){ const d=a.map(n=>n%10); return new Set(d).size<d.length; }
+const isOddEven = a => Math.abs(a.filter(n=>n%2).length*2-a.length)<=1;
+
+/* ---------- 状態（成績） ---------- */
+let state = {v:1, points:START_PTS, refills:0, tickets:[], backtests:[], pts100k:true};
+function upgradePts(){ if(state.pts100k) return false; state.points+=90000; state.pts100k=true; return true; }
+const LS_KEY = "muttsu-yoso-v1";
+function loadLocal(){ try{ const s=JSON.parse(localStorage.getItem(LS_KEY)||"null"); if(s&&s.v===1) state=s; }catch(e){} if(upgradePts()) saveLocal(); }
+function saveLocal(){ try{ localStorage.setItem(LS_KEY, JSON.stringify(state)); }catch(e){} }
+const tg = t => t.g || "6";   // 以前の予想はロト6
+let db=null, uid=null, stateRef=null, canSaveDb=false, canWriteShared=false, saveTimer=null, saving=false, dirty=false;
+function persist(){ saveLocal(); if(!canSaveDb) return; dirty=true; clearTimeout(saveTimer); saveTimer=setTimeout(flush,600); }
+async function flush(){
+  if(saving||!dirty) return; saving=true; dirty=false;
+  try{ await stateRef.set({json:JSON.stringify(state), at:Date.now()}); }
+  catch(e){ if(e&&e.code==="invalid_argument") canSaveDb=false; }
+  saving=false; if(dirty) flush(); renderSync();
+}
+
+/* 答え合わせ */
+function settle(){
+  const msgs=[]; let won=0, any=false;
+  for(const t of state.tickets){
+    if(t.settled) continue;
+    const g=GAMES[tg(t)], d=g.DRAWS.get(t.round); if(!d) continue;
+    t.settled=true; t.tier=judge(g,t.nums,d); t.win=t.tier?g.prize[t.tier]:0;
+    state.points+=t.win; won+=t.win; any=true;
+    if(t.tier) msgs.push(`${g.name} 第${t.round}回 ${TIER_NAME(t.tier)}`);
+  }
+  if(any){ persist(); toast(msgs.length ? `答え合わせ：${msgs.slice(0,3).join("・")}${msgs.length>3?" ほか":""}（+${won.toLocaleString()}pt）` : "答え合わせ：今回ははずれでした"); }
+}
+
+/* ---------- UI 共通 ---------- */
+const $ = id => document.getElementById(id);
+function el(tag,cls,txt){ const e=document.createElement(tag); if(cls) e.className=cls; if(txt!=null) e.textContent=txt; return e; }
+let toastT=null;
+function toast(msg){ const t=$("toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove("show"),3400); }
+function ballRow(nums, d, sm){
+  const box=el("div","nums"), set=d?new Set(d.nums):null, z=sm?" sm":"";
+  for(const n of nums){ let c="mini plain"+z; if(d){ if(set.has(n)) c="mini hit"+z; else if(d.bonus.includes(n)) c="mini bon"+z; } box.appendChild(el("span",c,n)); }
+  return box;
+}
+function renderHeader(){
+  const g=G();
+  $("pts").innerHTML=`${state.points.toLocaleString()}<span>pt</span>`;
+  const nr=nextRound(g), nd=nextRoundDate(g), late=nd<todayJst();
+  $("nextLine").innerHTML=`<span>${g.name} 次の抽せん <b>第${nr}回</b> ${shortDate(nd)}</span><span>${late?"結果の取り込み待ち":"最新 第"+g.LATEST+"回まで"}</span>`;
+  document.querySelectorAll(".gbtn").forEach(b=>{ const on=b.dataset.g===cg; b.classList.toggle("on",on); b.setAttribute("aria-selected",on); });
+}
+
+/* ---------- 予想する ---------- */
+const ABC="ABCDEFGHIJKLMNOPQRSTUVWXY";
+const lab = i => i<25 ? ABC[i] : "A"+ABC[i-25];
+const emptyLines = () => [...Array(SLOTS)].map(()=>({nums:[],rand:new Set()}));
+let lines=emptyLines(), cur=0;
+const filled = () => lines.filter(l=>l.nums.length===G().pick);
+function buildGrid(){
+  const g=G(), box=$("grid"); box.innerHTML="";
+  for(let n=1;n<=g.max;n++){
+    const b=el("button","ball",n); b.dataset.n=n; b.setAttribute("aria-label",`${n}番`);
+    b.onclick=()=>{ const L=lines[cur]; if(L.nums.includes(n)){ L.nums=L.nums.filter(x=>x!==n); L.rand.delete(n); } else if(L.nums.length<g.pick) L.nums.push(n); renderPick(); };
+    box.appendChild(b);
+  }
+}
+function renderPick(){
+  const g=G(), nr=nextRound(g);
+  $("pickTitle").textContent=`${g.name}（第${nr}回）`;
+  $("pickDate").textContent=`抽せん日：${nextRoundDate(g).replace(/-/g,"/")}`;
+  $("pickLead").textContent=`1〜${g.max}から異なる${g.pick}個の数字を選んでください。一度に登録できるのは 50口（A〜Y、AA〜AY 枠）までです。`;
+  $("randNote").textContent=`ランダム選択は残りの数字だけ、クイックピックは${g.pick}個すべてをおまかせで選びます。`;
+  $("costLabel").textContent=`1口：${g.cost}pt`;
+  $("pickNote").textContent=`1口の当たる確率はどの数字を選んでも同じです（1等 1/${g.total.toLocaleString()}）。${g.name}の抽せんは毎週${g.dayTxt}の夜。結果は抽せんの次の日の昼すぎに入り、自動で答え合わせします。`;
+  const L=lines[cur];
+  $("curLab").textContent=lab(cur);
+  $("prevLine").disabled=cur===0; $("nextLineBtn").disabled=cur===SLOTS-1;
+  $("pickCount").innerHTML=`あと<b>${g.pick-L.nums.length}</b>個`;
+  const box=$("lines"); box.innerHTML="";
+  const page=Math.floor(cur/PAGE);
+  lines.slice(page*PAGE,page*PAGE+PAGE).forEach((l,j)=>{ const i=page*PAGE+j;
+    const row=el("div","line"+(i===cur?" on":"")); row.setAttribute("role","button"); row.tabIndex=0; row.setAttribute("aria-label",`${lab(i)}枠を選ぶ`);
+    row.appendChild(el("span","lab",lab(i)));
+    const body=el("div","body"), dots=el("div","dots"+(g.pick>6?" seven":"")), s=sortN(l.nums);
+    for(let k=0;k<g.pick;k++){ const n=s[k]; dots.appendChild(el("span","dot"+(n?(l.rand.has(n)?" rand":" self"):""), n||"")); }
+    body.appendChild(dots);
+    if(i===cur){ const sub=el("div","sub"); sub.innerHTML=`登録口数<b>1口</b>`; body.appendChild(sub); }
+    row.appendChild(body);
+    const x=el("button","x","×"); x.setAttribute("aria-label",`${lab(i)}枠を消す`);
+    x.onclick=e=>{ e.stopPropagation(); lines[i]={nums:[],rand:new Set()}; renderPick(); };
+    row.appendChild(x);
+    row.onclick=()=>{ cur=i; renderPick(); };
+    row.onkeydown=e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); cur=i; renderPick(); } };
+    box.appendChild(row);
+  });
+  const pages=SLOTS/PAGE, pg=el("div","pager");
+  const mk=(t,to,dis,lbl)=>{ const b=el("button","pgb",t); b.disabled=dis; b.setAttribute("aria-label",lbl); b.onclick=()=>{ cur=to*PAGE; renderPick(); }; return b; };
+  pg.appendChild(mk("«",0,page===0,"最初の枠へ")); pg.appendChild(mk("‹",page-1,page===0,"前の5枠へ"));
+  pg.appendChild(el("span",null,`${lab(page*PAGE)}〜${lab(page*PAGE+PAGE-1)}（${page+1}/${pages}）`));
+  pg.appendChild(mk("›",page+1,page===pages-1,"次の5枠へ")); pg.appendChild(mk("»",pages-1,page===pages-1,"最後の枠へ"));
+  if(lines.some(l=>l.nums.length)) pg.appendChild(el("span","tag",`入力済み ${filled().length}口`));
+  box.appendChild(pg);
+  document.querySelectorAll("#grid .ball").forEach(b=>{
+    const n=+b.dataset.n, on=L.nums.includes(n);
+    b.classList.toggle("on",on); b.classList.toggle("rand",on&&L.rand.has(n)); b.setAttribute("aria-pressed",on);
+    b.disabled=!on&&L.nums.length>=g.pick;
+  });
+  const cnt=filled().length, cost=cnt*g.cost;
+  const open=state.tickets.filter(t=>tg(t)===cg&&t.round===nr&&!t.settled).length;
+  $("lineCount").textContent=cnt;
+  $("sumPt").innerHTML=`${cost.toLocaleString()}<small>pt</small>`;
+  const btn=$("btnBuy"), over=open+cnt>MAX_PER_ROUND;
+  btn.disabled=!cnt||state.points<cost||over;
+  btn.textContent= state.points<cost ? "ポイントが足りません" : over ? `1回に登録できるのは${MAX_PER_ROUND}口までです（登録済み ${open}口）` : cnt ? `${cnt}口の予想を登録する（${cost.toLocaleString()}pt）` : "予想を登録する";
+  renderOpen();
+}
+function fillRandom(all){
+  const g=G(), L=lines[cur];
+  if(all){ L.nums=[]; L.rand=new Set(); }
+  pickFrom(g.range.filter(n=>!L.nums.includes(n)), g.pick-L.nums.length, Math.random).forEach(n=>{ L.nums.push(n); L.rand.add(n); });
+  renderPick();
+}
+function renderOpen(){
+  const g=G(), list=$("openList"); list.innerHTML="";
+  const open=state.tickets.filter(t=>tg(t)===cg&&!t.settled).sort((a,b)=>b.round-a.round||b.at-a.at);
+  $("openInfo").textContent=open.length?`${open.length}口 答え合わせ待ち`:"";
+  if(!open.length){ list.appendChild(el("p","empty",`まだ登録していません。枠に${g.pick}個選んで「予想を登録する」を押してください。`)); return; }
+  for(const t of open.slice(0,60)){
+    const r=el("div","ticket"), meta=el("div"); meta.style.width="62px"; meta.innerHTML=`<b style="font-size:13px">第${t.round}回</b>`;
+    r.appendChild(meta); r.appendChild(ballRow(t.nums,null,true));
+    const del=el("button","btn small ghost","取消"); del.setAttribute("aria-label",`第${t.round}回の予想を取り消す`);
+    del.onclick=()=>{ state.tickets=state.tickets.filter(x=>x!==t); state.points+=g.cost; persist(); renderAll(); toast(`取り消して${g.cost}ptを戻しました`); };
+    r.appendChild(del); list.appendChild(r);
+  }
+  if(open.length>60) list.appendChild(el("p","muted",`ほか ${open.length-60}口`));
+}
+
+/* ---------- 統計の下ごしらえ ---------- */
+function stats(g, r, win=24){
+  const D=g.DRAWS, cnt=new Array(g.max+1).fill(0), last=new Array(g.max+1).fill(0);
+  for(let k=r-win;k<r;k++){ const d=D.get(k); if(d) d.nums.forEach(x=>cnt[x]++); }
+  let left=g.max; for(let k=r-1;k>=1&&left>0;k--){ const d=D.get(k); if(d) d.nums.forEach(x=>{ if(!last[x]){ last[x]=k; left--; } }); }
+  return {cnt,last,prev:D.get(r-1),p2:D.get(r-2),p3:D.get(r-3)};
+}
+
+/* ---------- 管理人の予想 ---------- */
+/* ロト6：添付資料「ロト6 確率の設計図」の絞り込み（ファネル）と買い方の型をそのまま機械的に当てはめる */
+const WARI = [[4.9,7.1,3.5],[3.9,7.3,2.8],[3.0,2.7,3.6],[3.4,2.5,2.9],[2.6,2.9,3.1],[2.5,2.9,3.7]];
+function funnel6(r){
+  const g=GAMES["6"], st=stats(g,r), rng=mulberry32(r*104729+3);
+  const P=st.prev.nums;
+  const sweet=g.range.filter(n=>st.cnt[n]>=3&&st.cnt[n]<=4);              // Filter1: 過去24回で3〜4回
+  const W=new Set();                                                          // Filter2: 割値（過去3回の位置ごとの合計÷割値）
+  if(st.p3) for(let k=0;k<6;k++){ const S=st.prev.nums[k]+st.p2.nums[k]+st.p3.nums[k]; for(const dv of WARI[k]){ const v=Math.round(S/dv); if(v>=1&&v<=43) W.add(v); } }
+  const slide=new Set(); P.forEach(n=>{ [n-1,n+1].forEach(x=>{ if(x>=1&&x<=43&&!P.includes(x)) slide.add(x); }); });
+  const score=n=> (sweet.includes(n)?2:0)+(W.has(n)?2:0)+(P.includes(n)?1:0)+(slide.has(n)?1:0)+rng()*0.01;
+  const ranked=g.range.slice().sort((a,b)=>score(b)-score(a));
+  const core=sortN(ranked.slice(0,10));                                      // 約10個に凝縮したコア数字
+  // エリア排除：直近10回で出すぎた10番台ごとのブロックを丸ごと外し、足りない分は点数の低い数字で10個に
+  const blocks=[[1,9],[10,19],[20,29],[30,39],[40,43]];
+  const bc=blocks.map(([a,b])=>{ let c=0; for(let k=r-10;k<r;k++){ const d=g.DRAWS.get(k); if(d) d.nums.forEach(x=>{ if(x>=a&&x<=b) c++; }); } return c/(b-a+1); });
+  const bi=bc.indexOf(Math.max(...bc)); let drop=g.range.filter(n=>n>=blocks[bi][0]&&n<=blocks[bi][1]&&!core.slice(0,3).includes(n));
+  if(drop.length>10) drop=drop.sort((a,b)=>score(a)-score(b)).slice(0,10);
+  for(const n of ranked.slice().reverse()){ if(drop.length>=10) break; if(!drop.includes(n)&&!core.includes(n)) drop.push(n); }
+  drop=sortN(drop);
+  return {sweet,W:sortN([...W]),slide:[...slide],core,ranked,drop,block:blocks[bi],P,rng};
+}
+const FMT = {
+  "6": [
+    {id:"blend", name:"おまかせ（4つの型をまぜる）", fixed:0, src:"ロト6 確率の設計図", kinds:["core","elim","all8","jiku"],
+     rule:"コア数字から・33数字消去法・全数字購入法・軸＋流しの4つの型から、順番に1口ずつ取ってまぜる"},
+    {id:"core", name:"コア数字から（ファネル）", fixed:0, src:"ロト6 確率の設計図",
+     rule:"過去24回で3〜4回出た数字（約15個）→割値で出た数字→引っ張り・スライドで点数をつけ、上位10個のコア数字から6個。前回の数字かその±1を1個以上、連続は1組まで、下1桁が同じペアを1組"},
+    {id:"elim", name:"33数字消去法", fixed:0, src:"ロト6 確率の設計図",
+     rule:"直近10回で出すぎた番台を丸ごと外し、点数の低い数字とあわせて10個を消した残り33個から6個"},
+    {id:"all8", name:"全数字購入法（8口）", fixed:8, src:"ロト6 確率の設計図",
+     rule:"8口で1〜43をすべてカバー。7口で42個を使い、8口目は残り1個＋コア数字5個"},
+    {id:"jiku", name:"軸＋流し（35口）", fixed:35, src:"ロト6 確率の設計図",
+     rule:"点数の高い3個を軸に固定し、次の7個から3個を全通り（7C3＝35口）"},
+  ],
+  "7": [
+    {id:"blend", name:"おまかせ（2つの型をまぜる）", fixed:0, src:"LOTO STRATEGY PLAYBOOK", kinds:["mix","form"],
+     rule:"5口ミックスとフォーメーションから、交互に1口ずつ取ってまぜる"},
+    {id:"mix", name:"5口ミックス（本命3・反動2）", fixed:0, src:"LOTO STRATEGY PLAYBOOK",
+     rule:""},
+    {id:"form", name:"フォーメーション（32口）", fixed:32, src:"LOTO STRATEGY PLAYBOOK",
+     rule:"軸1個を全口に固定、強気グループ4個から3個（4通り）、迷いの2択を3組（2×2×2＝8通り）で 1×4×8＝32口"},
+  ],
+};
+const MIX7 = [
+  {k:"本命", rule:"前回の数字を1〜2個引っ張り、残りは直近24回で3〜4回出た数字から。連続は1組まで、下1桁が同じペアを1組"},
+  {k:"QP",   rule:"クイックピック（自選の間にランダムをはさむ）"},
+  {k:"本命", rule:"直近3回の数字から5個を再利用し、残り2個は長く出ていない数字から"},
+  {k:"QP",   rule:"クイックピック（自選の間にランダムをはさむ）"},
+  {k:"反動", rule:"直近24回で2回以下しか出ていない数字が中心。前回から1個だけ引っ張る"},
+];
+let adminFmt={ "6":"blend", "7":"blend" }, adminN={ "6":10, "7":10 }, adminShowAll=false;
+const fmtOf = (gid,id) => FMT[gid].find(f=>f.id===(id||adminFmt[gid]));
+
+function uniqueFill(g, n, gen, rng, out){
+  const seen=new Set(out.map(t=>t.join())); out.fb=out.fb||new Set();
+  for(let i=out.length;i<n;i++){
+    let t=null;
+    for(let j=0;j<40;j++){ const c=gen(i); if(c&&!seen.has(c.join())){ t=c; break; } }
+    if(!t){ do{ t=sortN(pickFrom(g.range,g.pick,rng)); }while(seen.has(t.join())); out.fb.add(i); }
+    seen.add(t.join()); out.push(t);
+  }
+  return out;
+}
+function adminLines(gid, r, fmtId, n){
+  const g=GAMES[gid], f=fmtOf(gid,fmtId); n = f.fixed || n;
+  if(f.kinds){
+    // おまかせ：それぞれの型の予想から順番に1口ずつ取る（同じ組み合わせは飛ばす）
+    const src=f.kinds.map(k=>({k, ls:adminLines(gid,r,k,n), j:0}));
+    const out=[], seen=new Set(); out.fb=new Set(); out.kinds=[];
+    let i=0, idle=0;
+    while(out.length<n && idle<src.length){
+      const s=src[i%src.length]; i++;
+      let t=null, j=-1;
+      while(s.j<s.ls.length){ const c=s.ls[s.j], jj=s.j; s.j++; if(!seen.has(c.join())){ t=c; j=jj; break; } }
+      if(!t){ idle++; continue; } idle=0;
+      seen.add(t.join()); if(s.ls.fb&&s.ls.fb.has(j)) out.fb.add(out.length);
+      out.kinds.push({k:s.k, j}); out.push(t);
+    }
+    if(out.length<n) uniqueFill(g,n,()=>null,mulberry32(r*131+7),out);
+    return out;
+  }
+  if(gid==="6"){
+    const F=funnel6(r), rng=F.rng, P=F.P, near=new Set([...P,...F.slide]);
+    const tryMake=(pool,need)=>{ for(let i=0;i<300;i++){ const t=sortN(pickFrom(pool,6,rng)); if(need(t)) return t; } return sortN(pickFrom(pool,6,rng)); };
+    if(f.id==="core"){
+      const need=t=>t.some(x=>near.has(x))&&hasConsecLimit(t)&&hasDigitPair(t);
+      return uniqueFill(g,n,()=>tryMake(F.core,need),rng,[]);
+    }
+    if(f.id==="elim"){
+      const pool=g.range.filter(x=>!F.drop.includes(x));
+      return uniqueFill(g,n,()=>tryMake(pool,t=>hasConsecLimit(t)),rng,[]);
+    }
+    if(f.id==="all8"){
+      const order=pickFrom(g.range,43,rng), out=[];
+      for(let i=0;i<7;i++) out.push(sortN(order.slice(i*6,i*6+6)));
+      const rest=order[42], dup=F.core.filter(x=>x!==rest).slice(0,5);
+      out.push(sortN([rest,...dup])); out.fb=new Set(); return out;
+    }
+    if(f.id==="jiku"){
+      const axis=sortN(F.ranked.slice(0,3)), flow=sortN(F.ranked.slice(3,10));
+      const out=combos(flow,3).map(c=>sortN([...axis,...c])); out.fb=new Set(); out.axis=axis; out.flow=flow; return out;
+    }
+  }
+  // ロト7：添付資料「LOTO STRATEGY PLAYBOOK」
+  const st=stats(g,r), rng=mulberry32(r*7919+71), P=st.prev.nums;
+  const recent=[...new Set([...(st.prev?st.prev.nums:[]),...(st.p2?st.p2.nums:[]),...(st.p3?st.p3.nums:[])])];
+  const cold=g.range.filter(x=>!recent.includes(x)).sort((a,b)=>st.last[a]-st.last[b]).slice(0,8);
+  const ok=t=>t&&new Set(t).size===7&&hasConsecLimit(t);
+  const tryMake=(fn,extra)=>{ for(let i=0;i<300;i++){ const t=fn(); if(ok(t)&&(!extra||extra(t))) return sortN(t); } return sortN(pickFrom(g.range,7,rng)); };
+  if(f.id==="form"){
+    const sc=n=>(st.cnt[n]>=3&&st.cnt[n]<=4?2:0)+(P.includes(n)?1:0)+rng()*0.01;
+    const ranked=g.range.slice().sort((a,b)=>sc(b)-sc(a));
+    const axis=ranked[0], strong=ranked.slice(1,5), rest=ranked.slice(5,11);
+    const pairs=[[rest[0],rest[1]],[rest[2],rest[3]],[rest[4],rest[5]]];
+    const out=[];
+    for(const c of combos(strong,3)) for(const a of pairs[0]) for(const b of pairs[1]) for(const d of pairs[2]) out.push(sortN([axis,...c,a,b,d]));
+    out.fb=new Set(); out.axis=[axis]; out.strong=sortN(strong); out.pairs=pairs; return out;
+  }
+  const gen=[
+    ()=>tryMake(()=>{ const k=1+Math.floor(rng()*2), keep=pickFrom(P,k,rng);
+      let pool=g.range.filter(x=>!keep.includes(x)&&st.cnt[x]>=3&&st.cnt[x]<=4); if(pool.length<7-k) pool=g.range.filter(x=>!keep.includes(x)&&st.cnt[x]>=2);
+      return keep.concat(pickFrom(pool,7-k,rng)); }, hasDigitPair),
+    ()=>sortN(pickFrom(g.range,7,rng)),
+    ()=>tryMake(()=>pickFrom(recent,5,rng).concat(pickFrom(cold,2,rng))),
+    ()=>sortN(pickFrom(g.range,7,rng)),
+    ()=>tryMake(()=>{ const keep=pickFrom(P,1,rng);
+      let pool=g.range.filter(x=>!P.includes(x)&&st.cnt[x]<=2); if(pool.length<6) pool=g.range.filter(x=>!P.includes(x)&&st.cnt[x]<=3);
+      return keep.concat(pickFrom(pool,6,rng)); }),
+  ];
+  return uniqueFill(g,n,i=>gen[i%5](),rng,[]);
+}
+const MIN_R = { "6":25, "7":25 };
+const adminRecordCache=new Map();
+function adminRecord(gid, fmtId, n){
+  const g=GAMES[gid], f=fmtOf(gid,fmtId), nn=f.fixed||n, key=`${gid}|${f.id}|${nn}`;
+  const c0=adminRecordCache.get(key); if(c0&&c0.to===g.LATEST) return c0;
+  const c={0:0}; g.tiers.forEach(k=>c[k]=0); let m=0;
+  for(let r=MIN_R[gid];r<=g.LATEST;r++){ const d=g.DRAWS.get(r); if(!d) continue; for(const t of adminLines(gid,r,f.id,nn)){ c[judge(g,t,d)]++; m++; } }
+  const rec={from:MIN_R[gid],to:g.LATEST,tickets:m,c,n:nn}; adminRecordCache.set(key,rec); return rec;
+}
+function renderAdmin(){
+  const g=G(), r=nextRound(g), f=fmtOf(cg), n=f.fixed||adminN[cg];
+  const sel=$("adminFmt");
+  if(sel.dataset.g!==cg){ sel.innerHTML=""; FMT[cg].forEach(x=>{ const o=el("option",null,x.name); o.value=x.id; sel.appendChild(o); }); sel.dataset.g=cg; }
+  sel.value=f.id;
+  $("adminCount").disabled=!!f.fixed; $("adminCount").value=String(adminN[cg]);
+  $("adminTitle").textContent=`管理人の予想 ${g.name} 第${r}回`;
+  $("adminSrc").textContent=`資料「${f.src}」`;
+  $("adminLead").textContent=`添付資料「${f.src}」の選び方を機械的に当てはめた${n}口です。当たりやすくなるわけではありません。`;
+  const ls=adminLines(cg,r,f.id,n);
+  // 絞り込みの中身
+  const info=$("adminInfo"); info.innerHTML="";
+  const chip=(label,arr)=>{ const d=el("div","arow"); d.appendChild(el("span","alab",label)); const nb=el("div","nums"); arr.forEach(x=>nb.appendChild(el("span","mini plain sm",x))); d.appendChild(nb); info.appendChild(d); };
+  if(cg==="6"){
+    const F=funnel6(r);
+    chip(`24回で3〜4回（${F.sweet.length}個）`,F.sweet);
+    chip(`割値で出た数字（${F.W.length}個）`,F.W);
+    chip("コア数字（10個）",F.core);
+    if(f.id==="elim") chip(`消した10個（${F.block[0]}〜${F.block[1]}番台ほか）`,F.drop);
+    if(f.id==="jiku"){ chip("軸（3個）",ls.axis); chip("流し（7個）",ls.flow); }
+  } else if(f.id==="form"){
+    chip("軸（1個）",ls.axis); chip("強気グループ（4個から3個）",ls.strong); ls.pairs.forEach((p,i)=>chip(`迷いの2択 ${i+1}`,p));
+  }
+  info.style.display=info.childNodes.length?"":"none";
+  const box=$("adminLines"); box.innerHTML="";
+  (adminShowAll?ls:ls.slice(0,10)).forEach((t,i)=>{
+    const row=el("div","aline"); row.appendChild(el("span","lab",lab(i)));
+    const inf=el("div","info"), nb=el("div","nums"); t.forEach(x=>nb.appendChild(el("span","mini plain sm",x))); inf.appendChild(nb);
+    let rule="";
+    if(ls.fb&&ls.fb.has(i)) rule="【QP】このルールで作れる組み合わせが残っていないため、ほかの枠とかぶらないクイックピック";
+    else if(f.kinds){ const kd=ls.kinds[i], kf=fmtOf(cg,kd.k);
+      rule = kd.k==="mix" ? `【5口ミックス・${MIX7[kd.j%5].k}】${MIX7[kd.j%5].rule}` : `【${kf.name.replace(/（.*）/,"")}】${kf.rule}`;
+      if(ls.kinds.findIndex(x=>x.k===kd.k&&(kd.k!=="mix"||x.j%5===kd.j%5))!==i) rule=`【${kd.k==="mix"?"5口ミックス・"+MIX7[kd.j%5].k:kf.name.replace(/（.*）/,"")}】`; }
+    else if(f.id==="mix") rule=`【${MIX7[i%5].k}】${MIX7[i%5].rule}`;
+    else if(i===0) rule=`【${f.name}】${f.rule}`;
+    if(rule) inf.appendChild(el("div","rule",rule));
+    row.appendChild(inf); box.appendChild(row);
+  });
+  if(ls.length>10){ const b=el("button","btn small",adminShowAll?"10口だけ表示":`残り${ls.length-10}口も見る`); b.onclick=()=>{ adminShowAll=!adminShowAll; renderAdmin(); }; box.appendChild(b); }
+  $("btnAdmin").textContent=`この${ls.length}口を枠に入れる（${(ls.length*g.cost).toLocaleString()}pt）`;
+  const rec=adminRecord(cg,f.id,n), e=k=>rec.tickets*g.prob[k];
+  const fx=x=>x>=10?x.toFixed(0):x>=1?x.toFixed(1):x.toFixed(2);
+  const back=g.tiers.reduce((a,k)=>a+rec.c[k]*g.prize[k],0);
+  $("adminRecord").innerHTML=`<b>同じやり方を過去に当てはめると</b>（第${rec.from}〜${rec.to}回、各回${rec.n}口＝${rec.tickets.toLocaleString()}口）<br>`+
+    g.tiers.map(k=>`${TIER_NAME(k)} ${rec.c[k].toLocaleString()}回（目安 ${fx(e(k))}）`).join("・")+`<br>`+
+    `使ったpt ${(rec.tickets*g.cost).toLocaleString()} ／ 戻ったpt ${back.toLocaleString()}<br>`+
+    `同じ回の中で同じ組み合わせはかぶりません。「目安」はどんな選び方でも同じになる平均の回数で、1口あたりの確率は選び方で変わりません。`;
+}
+
+/* ---------- 過去で試す ---------- */
+function genTicket(g, strat, r, rng, cond, fixed){
+  if(strat==="fixed") return fixed;
+  const prev=g.DRAWS.get(r-1), K=g.pick;
+  let base;
+  switch(strat){
+    case "birthday": base={pool:g.range.slice(0,31)}; break;
+    case "avoidPrev": base={pool:g.range.filter(n=>!prev.nums.includes(n))}; break;
+    case "pullPrev1": base={pull:1}; break;
+    case "pullPrev2": base={pull:2}; break;
+    case "hot": case "cold": {
+      const st=stats(g,r); const order=pickFrom(g.range,g.max,rng).sort((a,b)=>strat==="hot"?st.cnt[b]-st.cnt[a]:st.cnt[a]-st.cnt[b]);
+      base={pool:order.slice(0,K*2)}; break; }
+    default: base={pool:g.range};
+  }
+  for(let tries=0;tries<300;tries++){
+    let t;
+    if(base.pull){ t=pickFrom(prev.nums,base.pull,rng).concat(pickFrom(g.range.filter(n=>!prev.nums.includes(n)),K-base.pull,rng)); }
+    else t=pickFrom(base.pool,K,rng);
+    if(cond.consec&&!hasConsecLimit(t)) continue;
+    if(cond.digit&&!hasDigitPair(t)) continue;
+    if(cond.odd&&!isOddEven(t)) continue;
+    return sortN(t);
+  }
+  return null;
+}
+const STRAT_NAME = s => $("strat").querySelector(`option[value="${s}"]`).textContent;
+function minRoundFor(strat){ return strat==="hot"||strat==="cold"||strat==="admin" ? 25 : (strat==="avoidPrev"||strat.startsWith("pullPrev")) ? 2 : 1; }
+function parseFixed(g){
+  const s=[...new Set($("fixedNums").value.split(/[^0-9]+/).filter(Boolean).map(Number))];
+  return (s.length===g.pick&&s.every(n=>n>=1&&n<=g.max)) ? sortN(s) : null;
+}
+function runTest(){
+  const g=G(), strat=$("strat").value;
+  const fixed = strat==="fixed" ? parseFixed(g) : null;
+  if(strat==="fixed"&&!fixed){ toast(`1〜${g.max}の違う数字を${g.pick}個、カンマ区切りで入れてください`); return; }
+  const cond={consec:$("cConsec").checked, digit:$("cDigit").checked, odd:$("cOdd").checked};
+  if(strat==="fixed"||strat==="admin") cond.consec=cond.digit=cond.odd=false;
+  const f=fmtOf(cg); let per=+$("perRound").value; if(strat==="admin"&&f.fixed) per=f.fixed;
+  let seed=parseInt($("seed").value,10); if(!Number.isFinite(seed)){ seed=Math.floor(Math.random()*1e6); $("seed").value=seed; }
+  const rng=mulberry32(seed);
+  let from=minRoundFor(strat); const rv=$("range").value; if(rv!=="all") from=Math.max(from,g.LATEST-(+rv)+1);
+  const counts={0:0}; g.tiers.forEach(k=>counts[k]=0); let tickets=0, skipped=0; const big=[];
+  for(let r=from;r<=g.LATEST;r++){
+    const d=g.DRAWS.get(r); if(!d) continue;
+    const al = strat==="admin" ? adminLines(cg,r,f.id,per) : null;
+    for(let k=0;k<per;k++){
+      const t = al ? al[k] : genTicket(g,strat,r,rng,cond,fixed);
+      if(!t){ skipped++; continue; }
+      tickets++; const tier=judge(g,t,d); counts[tier]++;
+      if(tier&&tier<=3&&big.length<20) big.push({r,t,tier});
+    }
+  }
+  const spent=tickets*g.cost, back=g.tiers.reduce((a,k)=>a+counts[k]*g.prize[k],0);
+  const condTxt=[cond.consec&&"連続は1組まで",cond.digit&&"下1桁ペアあり",cond.odd&&"奇数偶数を半分ずつ"].filter(Boolean).join("・");
+  const name = strat==="admin" ? `管理人の予想：${f.name}` : STRAT_NAME(strat)+(fixed?`（${fixed.join(",")}）`:"");
+  const rec={g:cg, at:Date.now(), strat, name, cond:condTxt, from, to:g.LATEST, per, seed, tickets, counts, spent, back};
+  state.backtests.unshift(rec); state.backtests=state.backtests.slice(0,30); persist();
+  renderTest(rec,big,skipped); renderStats();
+}
+function renderTest(rec,big,skipped){
+  const g=GAMES[rec.g], o=$("testOut"); o.innerHTML="";
+  const head=el("div"); head.innerHTML=`<h2 style="font-size:18px">${g.name}：${rec.name}</h2><div class="muted">${rec.cond?rec.cond+"／":""}第${rec.from}回〜第${rec.to}回（${(rec.to-rec.from+1).toLocaleString()}回 × ${rec.per}口 ＝ ${rec.tickets.toLocaleString()}口）・乱数の種 ${rec.seed}</div>`;
+  o.appendChild(head);
+  const tb=el("table"); tb.innerHTML=`<thead><tr><th>等級</th><th>出た回数</th><th>理論上の目安</th><th>目安との比</th></tr></thead>`;
+  const body=el("tbody");
+  for(const k of g.tiers){
+    const e=rec.tickets*g.prob[k], ratio=e>=1?(rec.counts[k]/e*100).toFixed(0)+"%":"—", et=e>=10?e.toFixed(0):e>=0.1?e.toFixed(1):e.toFixed(3);
+    const tr=el("tr"); tr.innerHTML=`<td>${TIER_NAME(k)}</td><td class="em">${rec.counts[k].toLocaleString()}</td><td>${et}</td><td>${ratio}</td>`; body.appendChild(tr);
+  }
+  const pAll=g.tiers.reduce((a,k)=>a+g.prob[k],0);
+  const tr0=el("tr"); tr0.innerHTML=`<td>はずれ</td><td class="em">${rec.counts[0].toLocaleString()}</td><td>${(rec.tickets*(1-pAll)).toFixed(0)}</td><td></td>`; body.appendChild(tr0);
+  tb.appendChild(body); o.appendChild(tb);
+  const lo=g.tiers[g.tiers.length-1], lo2=g.tiers[g.tiers.length-2];
+  const within=k=>{ const e=rec.tickets*g.prob[k]; return Math.abs(rec.counts[k]-e)<=2*Math.sqrt(e)+1; };
+  const n=el("p","note");
+  n.innerHTML=`「理論上の目安」は、どんな選び方でも同じになる平均の回数です。`+
+    (rec.tickets*g.prob[lo]>=5 ? (within(lo)&&within(lo2) ? `今回の${TIER_NAME(lo2)}・${TIER_NAME(lo)}の回数は、<span class="hint-ok">偶然のばらつきの範囲内</span>です。` : `今回は目安から少し離れましたが、乱数の種を変えると結果も変わります。`) : "")+
+    `選び方で当たる確率は変わりません。`;
+  o.appendChild(n);
+  const pt=el("div","row spread"); pt.innerHTML=`<span class="muted">使ったpt ${rec.spent.toLocaleString()}</span><span class="muted">戻ったpt ${rec.back.toLocaleString()}</span>`; o.appendChild(pt);
+  if(big.length){ o.appendChild(el("h3",null,"3等以上が出た回")); for(const h of big){ const r=el("div","drawrow"), m=el("div","meta"); m.innerHTML=`<b>第${h.r}回</b>${TIER_NAME(h.tier)}`; r.appendChild(m); r.appendChild(ballRow(h.t,g.DRAWS.get(h.r),true)); o.appendChild(r); } }
+  if(skipped) o.appendChild(el("p","muted",`条件に合う組み合わせが作れなかった口が ${skipped} 口あり、数えていません。`));
+}
+function renderTestForm(){
+  const g=G();
+  $("testTitle").textContent=`${g.name}の選び方を過去の回で試す`;
+  $("fixedLabel").firstChild.textContent=`いつも使う${g.pick}個（カンマ区切り）`;
+  if(!$("fixedNums").value || $("fixedNums").dataset.g!==cg){ $("fixedNums").value = cg==="6" ? "3,7,12,19,28,41" : "3,7,12,19,24,28,35"; $("fixedNums").dataset.g=cg; }
+  $("strat").querySelector('option[value="admin"]').textContent=`管理人の予想（${fmtOf(cg).name}）`;
+  $("strat").querySelector('option[value="fixed"]').textContent=`いつも同じ${g.pick}個`;
+}
+
+/* ---------- 成績 ---------- */
+function renderStats(){
+  const g=G(), mine=state.tickets.filter(t=>tg(t)===cg), done=mine.filter(t=>t.settled);
+  $("statsTitle").textContent=`あなたの成績（${g.name}）`;
+  const rounds=new Set(mine.map(t=>t.round)).size;
+  const c={0:0}; g.tiers.forEach(k=>c[k]=0); let spent=mine.length*g.cost, back=0;
+  for(const t of done){ c[t.tier]=(c[t.tier]||0)+1; back+=t.win; }
+  const tiles=$("tiles"); tiles.innerHTML="";
+  [[rounds,"予想した回"],[mine.length,"登録した口"],[done.length,"答え合わせ済み"]].forEach(([v,l])=>{ const t=el("div","tile"); t.innerHTML=`<b>${v.toLocaleString()}</b><span>${l}</span>`; tiles.appendChild(t); });
+  const tb=$("tierTable"); tb.innerHTML=`<thead><tr><th>等級</th><th>回数</th><th>もらったpt</th></tr></thead>`;
+  const body=el("tbody");
+  for(const k of [...g.tiers,0]){ const tr=el("tr"); tr.innerHTML=`<td>${TIER_NAME(k)}</td><td class="em">${c[k]}</td><td>${k?(c[k]*g.prize[k]).toLocaleString():""}</td>`; body.appendChild(tr); }
+  const tr=el("tr"); tr.innerHTML=`<td>合計</td><td class="em">${done.length}</td><td>使った ${spent.toLocaleString()} ／ 戻った ${back.toLocaleString()}</td>`; body.appendChild(tr);
+  tb.appendChild(body);
+  const minCost=Math.min(...Object.values(GAMES).map(x=>x.cost));
+  $("btnRefill").disabled=state.points>=minCost;
+  $("btnRefill").textContent=state.points>=minCost?`補充は${minCost}pt未満のとき`:`${START_PTS.toLocaleString()}ptを補充`;
+  const dl=$("doneList"); dl.innerHTML="";
+  const ds=done.slice().sort((a,b)=>b.round-a.round||b.at-a.at).slice(0,40);
+  if(!ds.length) dl.appendChild(el("p","empty","まだありません。抽せんの次の日に見てみてください。"));
+  for(const t of ds){ const r=el("div","ticket"), meta=el("div"); meta.style.width="62px"; meta.innerHTML=`<b style="font-size:13px">第${t.round}回</b>`; r.appendChild(meta); r.appendChild(ballRow(t.nums,g.DRAWS.get(t.round),true)); r.appendChild(el("span",t.tier?"pill win":"pill",TIER_NAME(t.tier))); dl.appendChild(r); }
+  const bh=$("btHist"); bh.innerHTML="";
+  const bts=state.backtests.filter(b=>(b.g||"6")===cg);
+  if(!bts.length) bh.appendChild(el("p","empty","「過去で試す」で試した結果がここに残ります。"));
+  for(const b of bts.slice(0,10)){
+    const r=el("div","ticket"); r.style.flexDirection="column"; r.style.alignItems="stretch"; r.style.gap="2px";
+    r.innerHTML=`<div class="row spread"><b style="font-size:14px">${b.name}</b><span class="tag">${new Date(b.at).toLocaleDateString("ja-JP")}</span></div>`+
+      `<div class="muted">${b.cond?b.cond+"／":""}${b.tickets.toLocaleString()}口：${g.tiers.map(k=>`${k}等${b.counts[k]||0}`).join("・")}</div>`;
+    bh.appendChild(r);
+  }
+  renderSync();
+}
+function renderSync(){ $("syncNote").textContent = canSaveDb ? "成績はアカウントに保存しています（ptはロト6・ロト7共通）" : "成績はこの端末に保存しています（ptはロト6・ロト7共通）"; }
+
+/* ---------- 結果 ---------- */
+let listShown=30, findR=null;
+function renderResults(){
+  const g=G(), d=g.DRAWS.get(g.LATEST);
+  $("latestTitle").textContent=`${g.name} 第${d.round}回の当せん番号`;
+  const ln=$("latestNums"); ln.innerHTML="";
+  d.nums.forEach(n=>ln.appendChild(el("span","mini hit",n)));
+  ln.appendChild(el("span","plus","ボーナス")); d.bonus.forEach(b=>ln.appendChild(el("span","mini bon",b)));
+  $("latestDate").textContent=`${jpDate(d.date)} 抽せん`;
+  $("latestSrc").textContent = d.src==="manual"||d.src==="local" ? "手入力" : "";
+  $("tierRules").innerHTML=`<thead><tr><th>等級</th><th>当せん条件</th><th>ゲーム内pt</th></tr></thead><tbody>`+
+    g.tiers.map(k=>`<tr><td>${k}等</td><td>${g.rule[k]}</td><td>${g.prize[k].toLocaleString()}</td></tr>`).join("")+`</tbody>`;
+  const nr=nextRound(g), nd=nextRoundDate(g);
+  if(!$("mRound").value||$("mRound").dataset.g!==cg){ $("mRound").value=nr; $("mDate").value=nd; $("mRound").dataset.g=cg; }
+  $("mLabel").textContent=`本数字${g.pick}個 ＋ ボーナス数字${g.nb}個（右端）`;
+  $("manualHint").textContent = nd<todayJst() ? `第${nr}回（${shortDate(nd)}）の結果がまだ入っていません。自動で入らないときは、ここで入れられます。` : "自動で取り込めなかった回は、ここで入れられます。";
+  const list=$("drawList"); list.innerHTML="";
+  const rs = findR ? [findR] : Array.from({length:Math.min(listShown,g.LATEST)},(_,i)=>g.LATEST-i);
+  for(const r of rs){
+    const x=g.DRAWS.get(r); if(!x){ list.appendChild(el("p","empty",`第${r}回のデータはありません`)); continue; }
+    const row=el("div","drawrow"), m=el("div","meta"); m.innerHTML=`<b>第${r}回</b>${shortDate(x.date)}`; row.appendChild(m);
+    const nb=el("div","nums"); x.nums.forEach(n=>nb.appendChild(el("span","mini plain sm",n))); x.bonus.forEach(b=>nb.appendChild(el("span","mini bon sm",b)));
+    row.appendChild(nb); list.appendChild(row);
+  }
+  $("btnMore").style.display = findR||listShown>=g.LATEST ? "none" : "";
+  $("resNote").innerHTML=`当せん番号は、${g.name}の公表された結果を取り込んでいます。正式な結果は <a href="${g.url}" style="color:var(--accent-ink)">みずほ銀行の当せん番号案内</a> で確かめてください。`;
+}
+function buildManual(){
+  const g=G(), box=$("mNums"); box.innerHTML="";
+  box.style.gridTemplateColumns=`repeat(${g.pick+g.nb},1fr)`;
+  for(let i=0;i<g.pick+g.nb;i++){ const inp=el("input"); inp.type="number"; inp.min=1; inp.max=g.max; inp.inputMode="numeric"; inp.id="mN"+i; inp.setAttribute("aria-label", i<g.pick?`本数字${i+1}`:`ボーナス数字${i-g.pick+1}`); if(i>=g.pick) inp.style.borderColor="var(--orange)"; box.appendChild(inp); }
+}
+async function saveManual(){
+  const g=G(), round=parseInt($("mRound").value,10), date=$("mDate").value;
+  const v=[...Array(g.pick+g.nb)].map((_,i)=>parseInt($("mN"+i).value,10));
+  const o={round,date,nums:sortN(v.slice(0,g.pick)),bonus:sortN(v.slice(g.pick)),src:"manual"};
+  if(!validDraw(g,o)){ toast(`回・日付と、1〜${g.max}の違う数字を${g.pick+g.nb}個（右端${g.nb}個がボーナス）入れてください`); return; }
+  if(g.BASE.has(round)||g.extraDb.has(round)){ toast(`第${round}回はもう入っています`); return; }
+  if(round>g.LATEST+1){ toast(`先に第${g.LATEST+1}回を入れてください`); return; }
+  const docBonus = g.nb===1 ? o.bonus[0] : o.bonus;
+  if(db&&canWriteShared){
+    try{ await db.doc(g.col+"/"+round).set({round,date,nums:o.nums,bonus:docBonus,source:"manual",at:Date.now()}); g.extraDb.set(round,o); }
+    catch(e){ canWriteShared=false; g.extraLocal.set(round,{...o,src:"local"}); saveLocalDraws(); }
+  } else { g.extraLocal.set(round,{...o,src:"local"}); saveLocalDraws(); }
+  for(let i=0;i<g.pick+g.nb;i++) $("mN"+i).value="";
+  $("mRound").value=""; $("mDate").value="";
+  refreshDraws(g); settle(); renderAll(); toast(`${g.name} 第${round}回の結果を保存しました`);
+}
+
+/* ---------- 公開CSVから結果を読む（ログインなし版） ---------- */
+const CSV_SRC={
+  "6":["https://raw.githubusercontent.com/tyr-ui/LotteryAI/HEAD/data/raw/loto6.csv","https://raw.githubusercontent.com/tonybjzhao/lottrun_flutter/HEAD/docs/jp_loto6.csv"],
+  "7":["https://raw.githubusercontent.com/tyr-ui/LotteryAI/HEAD/data/raw/loto7.csv","https://raw.githubusercontent.com/tonybjzhao/lottrun_flutter/HEAD/docs/jp_loto7.csv"]
+};
+const AUTO_KEY=LS_KEY+"-auto";
+function applyAuto(g,list){ let ch=false; for(const o of list){ if(validDraw(g,o)&&!g.BASE.has(o.round)&&!g.extraDb.has(o.round)){ g.extraDb.set(o.round,o); ch=true; } } if(ch) refreshDraws(g); return ch; }
+function loadAutoCache(){ try{ const c=JSON.parse(localStorage.getItem(AUTO_KEY)||"{}"); for(const gid in c){ const g=GAMES[gid]; if(g) applyAuto(g,c[gid]); } }catch(e){} }
+function saveAutoCache(){ try{ const c={}; for(const g of Object.values(GAMES)) c[g.id]=[...g.extraDb.values()]; localStorage.setItem(AUTO_KEY,JSON.stringify(c)); }catch(e){} }
+async function syncCsv(){
+  let changed=false;
+  for(const g of Object.values(GAMES)){
+    try{
+      const [ta,tb]=await Promise.all(CSV_SRC[g.id].map(u=>fetch(u,{cache:"no-cache"}).then(r=>r.ok?r.text():"")));
+      const B=new Map();
+      for(const line of tb.split(/\r?\n/).slice(1)){ const c=line.split(","); if(c.length<13) continue;
+        const nums=c.slice(4,4+g.pick).map(Number), bonus=c.slice(11,11+g.nb).map(Number); B.set(c[2],sortN(nums).join()+"|"+sortN(bonus).join()); }
+      const add=[];
+      for(const line of ta.split(/\r?\n/).slice(1)){ const c=line.split(","); const round=parseInt(c[0],10);
+        if(!(round>g.LATEST)) continue;
+        const date=(c[1]||"").replace(/\//g,"-"), nums=sortN(c.slice(2,2+g.pick).map(Number)), bonus=sortN(c.slice(2+g.pick,2+g.pick+g.nb).map(Number));
+        if(B.get(date)!==nums.join()+"|"+bonus.join()) continue;   // 2つのデータが一致した回だけ使う
+        add.push({round,date,nums,bonus,src:"auto"}); }
+      add.sort((a,b)=>a.round-b.round);
+      if(applyAuto(g,add)) changed=true;
+    }catch(e){}
+  }
+  if(changed){ saveAutoCache(); settle(); renderAll(); }
+}
+function saveLocalDraws(){ try{ const all=[]; for(const g of Object.values(GAMES)) for(const o of g.extraLocal.values()) all.push({...o,g:g.id}); localStorage.setItem(LS_KEY+"-draws",JSON.stringify(all)); }catch(e){} }
+function loadLocalDraws(){ try{ for(const o of JSON.parse(localStorage.getItem(LS_KEY+"-draws")||"[]")){ const g=GAMES[o.g||"6"]; const b=Array.isArray(o.bonus)?o.bonus:[o.bonus]; const x={round:o.round,date:o.date,nums:o.nums,bonus:b,src:"local"}; if(validDraw(g,x)) g.extraLocal.set(x.round,x); } }catch(e){} }
+
+/* ---------- 全体 ---------- */
+function renderAll(){ renderHeader(); renderPick(); renderAdmin(); renderTestForm(); renderStats(); renderResults(); }
+function showView(v){
+  document.querySelectorAll(".view").forEach(s=>s.classList.toggle("on",s.id==="v-"+v));
+  document.querySelectorAll(".tab").forEach(t=>{ const on=t.dataset.v===v; t.classList.toggle("on",on); t.setAttribute("aria-current",on?"page":"false"); });
+  window.scrollTo(0,0);
+  if(location.hash.slice(1)!==v) history.replaceState(null,"","#"+v);
+}
+function switchGame(gid){
+  if(gid===cg||!GAMES[gid]) return;
+  cg=gid; try{ localStorage.setItem(LS_KEY+"-game",cg); }catch(e){}
+  lines=emptyLines(); cur=0; adminShowAll=false; findR=null; listShown=30; $("findRound").value="";
+  $("testOut").innerHTML=`<p class="empty">選び方を決めて「この選び方で試す」を押すと、何等が何回出たかがここに出ます。</p>`;
+  buildGrid(); buildManual(); renderAll();
+}
+
+function init(){
+  loadLocal(); loadLocalDraws(); Object.values(GAMES).forEach(refreshDraws);
+  try{ const s=localStorage.getItem(LS_KEY+"-game"); if(GAMES[s]) cg=s; }catch(e){}
+  buildGrid(); buildManual();
+  $("seed").value=Math.floor(Math.random()*1e6);
+  document.querySelectorAll(".gbtn").forEach(b=>b.onclick=()=>switchGame(b.dataset.g));
+  document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>showView(t.dataset.v));
+  const h=location.hash.slice(1); if(["pick","test","stats","res"].includes(h)) showView(h);
+  window.addEventListener("hashchange",()=>{ const h=location.hash.slice(1); if(["pick","test","stats","res"].includes(h)) showView(h); });
+  $("btnAdmin").onclick=()=>{ const g=G(), f=fmtOf(cg), ls=adminLines(cg,nextRound(g),f.id,f.fixed||adminN[cg]); lines=emptyLines(); ls.slice(0,SLOTS).forEach((t,i)=>{ lines[i]={nums:t.slice(),rand:new Set()}; }); cur=0; renderPick(); $("lines").scrollIntoView({behavior:"smooth",block:"start"}); toast(`管理人の予想${ls.length}口を${lab(0)}〜${lab(ls.length-1)}枠に入れました`); };
+  const reAdmin=()=>{ adminShowAll=false; $("adminRecord").textContent="計算中…"; setTimeout(()=>{ renderAdmin(); renderTestForm(); },20); };
+  $("adminFmt").onchange=()=>{ adminFmt[cg]=$("adminFmt").value; reAdmin(); };
+  $("adminCount").onchange=()=>{ adminN[cg]=+$("adminCount").value; reAdmin(); };
+  $("btnClear").onclick=()=>{ lines[cur]={nums:[],rand:new Set()}; renderPick(); };
+  $("btnRand").onclick=()=>fillRandom(false);
+  $("btnQuick").onclick=()=>fillRandom(true);
+  $("prevLine").onclick=()=>{ if(cur>0){ cur--; renderPick(); } };
+  $("nextLineBtn").onclick=()=>{ if(cur<SLOTS-1){ cur++; renderPick(); } };
+  $("btnBuy").onclick=()=>{
+    const g=G(), ls=filled(), cost=ls.length*g.cost;
+    if(!ls.length||state.points<cost) return;
+    const r=nextRound(g);
+    ls.forEach((l,i)=>state.tickets.push({id:Date.now().toString(36)+i+Math.random().toString(36).slice(2,6), g:cg, round:r, nums:sortN(l.nums), at:Date.now()+i, settled:false, tier:null, win:0}));
+    state.points-=cost; lines=emptyLines(); cur=0; persist(); renderAll();
+    toast(`${g.name} 第${r}回に${ls.length}口登録しました。抽せんのあと自動で答え合わせします`);
+  };
+  $("btnRefill").onclick=()=>{ const minCost=Math.min(...Object.values(GAMES).map(x=>x.cost)); if(state.points>=minCost) return; state.points+=START_PTS; state.refills++; persist(); renderAll(); toast(`${START_PTS.toLocaleString()}ptを補充しました`); };
+  $("strat").onchange=()=>{ const v=$("strat").value, f=v==="fixed"||v==="admin"; $("fixedBox").style.display=v==="fixed"?"":"none"; $("condBox").style.opacity=f?.4:1; $("condBox").querySelectorAll("input").forEach(i=>i.disabled=f); };
+  $("btnRun").onclick=()=>{ $("btnRun").disabled=true; $("btnRun").textContent="計算中…"; setTimeout(()=>{ try{ runTest(); } finally { $("btnRun").disabled=false; $("btnRun").textContent="この選び方で試す"; } },30); };
+  $("btnManual").onclick=saveManual;
+  $("btnMore").onclick=()=>{ listShown+=50; renderResults(); };
+  $("findRound").oninput=()=>{ const v=parseInt($("findRound").value,10); findR=v>=1?v:null; renderResults(); };
+  settle(); renderAll();
+  loadAutoCache(); settle(); renderAll(); syncCsv();
+  document.addEventListener("visibilitychange",()=>{ if(!document.hidden) syncCsv(); });
+}
+
+async function connectDb(){
+  if(!window.claude||typeof window.claude.use!=="function") return;
+  try{
+    db=await window.claude.use("db");
+    const user=await window.claude.use("user");
+    if(!db) return;
+    try{ const own=user&&typeof user.isOwner==="function"?await user.isOwner():null; canWriteShared=own!==false; }catch(e){ canWriteShared=true; }
+    for(const g of Object.values(GAMES)){
+      db.collection(g.col).onSnapshot(snap=>{
+        const m=new Map();
+        for(const d of snap.docs){ const x=d.data(); if(!x) continue;
+          const o={round:x.round,date:x.date,nums:Array.isArray(x.nums)?sortN(x.nums):[],bonus:Array.isArray(x.bonus)?sortN(x.bonus):[x.bonus],src:x.source==="manual"?"manual":"auto"};
+          if(validDraw(g,o)) m.set(o.round,o); }
+        g.extraDb=m; refreshDraws(g); settle(); renderAll();
+      },()=>{});
+    }
+    uid=user?await user.id():null;
+    if(!uid) return;
+    stateRef=db.doc("data/users/"+uid+"/state");
+    const snap=await stateRef.get();
+    let push=!snap.exists;
+    if(snap.exists){
+      try{ const s=JSON.parse(snap.data().json); if(s&&s.v===1){
+        const localNewer=(state.tickets.length+state.backtests.length)>(s.tickets.length+s.backtests.length);
+        if(localNewer) push=true; else { state=s; if(upgradePts()) push=true; }
+      } }catch(e){}
+    }
+    canSaveDb=true; saveLocal(); settle(); renderAll();
+    if(push){ dirty=true; flush(); }
+  }catch(e){}
+}
+init();
+</script>
+</body>
+</html>
